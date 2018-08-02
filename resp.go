@@ -7,7 +7,15 @@ import (
 	"strconv"
 )
 
-func (r *Redis) read() (interface{}, error) {
+func (r *Redis) readToReply() *Reply {
+	reply, err := r.read()
+	if err != nil {
+		return &Reply{err: err}
+	}
+	return reply
+}
+
+func (r *Redis) read() (*Reply, error) {
 	respType, err := r.reader.ReadByte()
 	if err != nil {
 		return nil, err
@@ -15,8 +23,11 @@ func (r *Redis) read() (interface{}, error) {
 
 	switch respType {
 	case '+':
-		_, err := readUntilCRCL(r.reader)
-		return nil, err
+		resp, err := readUntilCRCL(r.reader)
+		if err != nil {
+			return nil, err
+		}
+		return &Reply{str: nullString{String: string(resp)}}, nil
 	case '-':
 		message, err := readUntilCRCL(r.reader)
 		if err != nil {
@@ -36,7 +47,7 @@ func (r *Redis) read() (interface{}, error) {
 		}
 
 		if c == -1 {
-			return "", nil // TODO return Null Bulk String
+			return &Reply{str: nullString{Valid: false}}, nil
 		}
 
 		bs := make([]byte, c)
@@ -46,7 +57,7 @@ func (r *Redis) read() (interface{}, error) {
 
 		readUntilCRCL(r.reader)
 
-		return bs, nil
+		return &Reply{str: nullString{String: string(bs)}}, nil
 	case '*':
 	}
 

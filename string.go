@@ -1,19 +1,17 @@
 package redis
 
-func (r *Redis) Set(key, value string) error {
+func (r *Redis) Set(key, value string) *Reply {
 	if err := r.cmd("SET", key, value); err != nil {
-		return err
+		return &Reply{err: err}
 	}
 
-	_, err := r.read()
-	return err
+	return r.readToReply()
 }
 
-func (r *Redis) Get(key string) (string, error) {
+func (r *Redis) Get(key string) *Reply {
 	if err := r.cmd("GET", key); err != nil {
-		return "", err
+		return &Reply{err: err}
 	}
 
-	bs, err := r.read()
-	return string(bs.([]byte)), err
+	return r.readToReply()
 }
