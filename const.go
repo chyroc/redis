@@ -11,4 +11,5 @@ var CRLF = []byte{CR, LF}
 
 var (
 	UnSupportRespType = errors.New("unsupported redis resp type")
+	EmptyCommand      = errors.New("empty command")
 )

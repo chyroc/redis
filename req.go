@@ -23,6 +23,12 @@ $<参数 N 的字节数量> CR LF
 */
 
 func (r Redis) cmd(args ...string) error {
+	fmt.Printf("send %#v\n", args)
+
+	if len(args) == 0 {
+		return EmptyCommand
+	}
+
 	buf := new(bytes.Buffer)
 
 	buf.WriteString("*")
@@ -39,7 +45,7 @@ func (r Redis) cmd(args ...string) error {
 		buf.Write(p)
 		buf.Write(CRLF)
 	}
-	fmt.Printf("send [%#v]\n", buf.String())
+	//fmt.Printf("send [%#v]\n", buf.String())
 
 	return r.write(buf.Bytes())
 }

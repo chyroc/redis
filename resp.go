@@ -3,7 +3,6 @@ package redis
 import (
 	"bufio"
 	"errors"
-	"fmt"
 	"strconv"
 )
 
@@ -27,7 +26,7 @@ func (r *Redis) read() (*Reply, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &Reply{str: nullString{String: string(resp)}}, nil
+		return &Reply{str: nullString{String: string(resp), Valid: true}}, nil
 	case '-':
 		message, err := readUntilCRCL(r.reader)
 		if err != nil {
@@ -57,7 +56,7 @@ func (r *Redis) read() (*Reply, error) {
 
 		readUntilCRCL(r.reader)
 
-		return &Reply{str: nullString{String: string(bs)}}, nil
+		return &Reply{str: nullString{String: string(bs), Valid: true}}, nil
 	case '*':
 	}
 
@@ -67,17 +66,13 @@ func (r *Redis) read() (*Reply, error) {
 func readUntilCRCL(reader *bufio.Reader) ([]byte, error) {
 	bs, err := reader.ReadBytes(LF)
 	if err != nil {
-		fmt.Printf("[%s]\n", bs)
 		return bs, err
 	}
 
 	l := len(bs)
 	if l >= 2 && bs[l-2] == CR {
-		fmt.Printf("[%s]\n", bs[:l-2])
 		return bs[:l-2], nil
 	}
-
-	fmt.Printf("[%s]\n", bs)
 
 	return bs, nil
 }
