@@ -7,6 +7,7 @@ import (
 )
 
 type Redis struct {
+	conn   net.Conn
 	reader *bufio.Reader
 	writer *bufio.Writer
 }
@@ -18,6 +19,7 @@ func Dial(addr string) (*Redis, error) {
 	}
 	r := new(Redis)
 
+	r.conn = conn
 	r.reader = bufio.NewReader(conn)
 	r.writer = bufio.NewWriter(conn)
 

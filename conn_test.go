@@ -8,10 +8,22 @@ import (
 	"github.com/Chyroc/redis"
 )
 
-func TestConn(t *testing.T) {
+func conn(t *testing.T) *redis.Redis {
 	as := assert.New(t)
 
 	r, err := redis.Dial("127.0.0.1:6379")
 	as.Nil(err)
 	as.NotNil(r)
+
+	return r
+}
+
+func TestConn(t *testing.T) {
+	as := assert.New(t)
+
+	t.Run("", func(t *testing.T) {
+		r := conn(t)
+		as.Nil(r.Set("k", "v"))
+		as.Nil(r.Get("k"))
+	})
 }
