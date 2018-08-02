@@ -24,6 +24,8 @@ func TestConn(t *testing.T) {
 	t.Run("", func(t *testing.T) {
 		r := conn(t)
 		as.Nil(r.Set("k", "v"))
-		as.Nil(r.Get("k"))
+		re, err := r.Get("k")
+		as.Nil(err)
+		as.Equal("v", re)
 	})
 }

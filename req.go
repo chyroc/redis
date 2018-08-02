@@ -2,38 +2,13 @@ package redis
 
 import (
 	"bytes"
-	"strconv"
 	"fmt"
+	"strconv"
 )
-
-const (
-	LF byte = 10 // \n
-	CR byte = 13 // \r
-)
-
-var CRLF = []byte{CR, LF}
 
 func (r Redis) write(p []byte) error {
 	_, err := r.conn.Write(p)
 	return err
-}
-
-func (r Redis) readUntilCRCL() ([]byte, error) {
-	bs, err := r.reader.ReadBytes(LF)
-	if err != nil {
-		fmt.Printf("[%s]\n", bs)
-		return bs, err
-	}
-
-	l := len(bs)
-	if l >= 2 && bs[l-2] == CR {
-		fmt.Printf("[%s]\n", bs[:l-2])
-		return bs[:l-2], nil
-	}
-
-	fmt.Printf("[%s]\n", bs)
-
-	return bs, nil
 }
 
 /*

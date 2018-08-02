@@ -5,15 +5,15 @@ func (r *Redis) Set(key, value string) error {
 		return err
 	}
 
-	_, err := r.readUntilCRCL()
+	_, err := r.read()
 	return err
 }
 
-func (r *Redis) Get(key string) error {
+func (r *Redis) Get(key string) (string, error) {
 	if err := r.cmd("GET", key); err != nil {
-		return err
+		return "", err
 	}
 
-	_, err := r.readUntilCRCL()
-	return err
+	bs, err := r.read()
+	return string(bs.([]byte)), err
 }
