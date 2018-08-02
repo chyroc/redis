@@ -6,14 +6,6 @@ import (
 	"strconv"
 )
 
-func (r *Redis) readToReply() *Reply {
-	reply, err := r.read()
-	if err != nil {
-		return &Reply{err: err}
-	}
-	return reply
-}
-
 func (r *Redis) read() (*Reply, error) {
 	respType, err := r.reader.ReadByte()
 	if err != nil {
@@ -26,7 +18,7 @@ func (r *Redis) read() (*Reply, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &Reply{str: nullString{String: string(resp), Valid: true}}, nil
+		return bytesToReply(resp), nil
 	case '-':
 		message, err := readUntilCRCL(r.reader)
 		if err != nil {
@@ -34,29 +26,29 @@ func (r *Redis) read() (*Reply, error) {
 		}
 		return nil, errors.New(string(message)) // TODO 错误类型
 	case ':':
-
+		length, err := readIntBeforeCRCL(r.reader)
+		if err != nil {
+			return nil, err
+		}
+		return intToReply(length), nil
 	case '$':
-		length, err := readUntilCRCL(r.reader)
-		if err != nil {
-			return nil, err
-		}
-		c, err := strconv.Atoi(string(length))
+		length, err := readIntBeforeCRCL(r.reader)
 		if err != nil {
 			return nil, err
 		}
 
-		if c == -1 {
-			return &Reply{str: nullString{Valid: false}}, nil
+		if length == -1 {
+			return nullReply(), nil
 		}
 
-		bs := make([]byte, c)
+		bs := make([]byte, length)
 		if _, err := r.reader.Read(bs); err != nil {
 			return nil, err
 		}
 
 		readUntilCRCL(r.reader)
 
-		return &Reply{str: nullString{String: string(bs), Valid: true}}, nil
+		return bytesToReply(bs), nil
 	case '*':
 	}
 
@@ -75,4 +67,16 @@ func readUntilCRCL(reader *bufio.Reader) ([]byte, error) {
 	}
 
 	return bs, nil
+}
+
+func readIntBeforeCRCL(reader *bufio.Reader) (int64, error) {
+	length, err := readUntilCRCL(reader)
+	if err != nil {
+		return 0, err
+	}
+	c, err := strconv.ParseInt(string(length), 10, 64)
+	if err != nil {
+		return 0, err
+	}
+	return c, nil
 }

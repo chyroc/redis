@@ -9,20 +9,20 @@ import (
 	"time"
 )
 
-func conn(t *testing.T) *redis.Redis {
+func conn(t *testing.T) (*redis.Redis, *assert.Assertions) {
 	as := assert.New(t)
 
 	r, err := redis.Dial("127.0.0.1:6379")
 	as.Nil(err)
 	as.NotNil(r)
 
-	return r
+	as.Nil(r.FlushDB().Err())
+
+	return r, as
 }
 
 func TestStringGetSet(t *testing.T) {
-	as := assert.New(t)
-	r := conn(t)
-	as.Nil(r.FlushDB().Err())
+	r, as := conn(t)
 
 	{
 		// get and set
@@ -85,4 +85,16 @@ func TestStringGetSet(t *testing.T) {
 	}
 
 	// TODO test lock with expire + nx xx
+}
+
+func TestIncr(t *testing.T) {
+	r, as := conn(t)
+
+	p := r.Incr("page_view")
+	as.Nil(p.Err())
+	as.Equal(1, p.Integer())
+
+	p = r.Incr("page_view")
+	as.Nil(p.Err())
+	as.Equal(2, p.Integer())
 }

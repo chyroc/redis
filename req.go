@@ -49,3 +49,16 @@ func (r Redis) cmd(args ...string) error {
 
 	return r.write(buf.Bytes())
 }
+
+func (r Redis) run(args ...string) *Reply {
+	if err := r.cmd(args...); err != nil {
+		return errToReply(err)
+	}
+
+	reply, err := r.read()
+	if err != nil {
+		return errToReply(err)
+	}
+
+	return reply
+}

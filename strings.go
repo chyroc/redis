@@ -7,7 +7,7 @@ import (
 )
 
 // https://redis.io/commands#string
-// http://redisdoc.com/string/set.html
+// http://redisdoc.com/string/index.html
 
 type SetOption struct {
 	Expire time.Duration
@@ -38,18 +38,17 @@ func (r *Redis) Set(key, value string, options ...SetOption) *Reply {
 
 	}
 
-	if err := r.cmd(args...); err != nil {
-		return &Reply{err: err}
-	}
-
-	return r.readToReply()
+	return r.run(args...)
 }
 
 // GET key
 func (r *Redis) Get(key string) *Reply {
-	if err := r.cmd("GET", key); err != nil {
-		return &Reply{err: err}
-	}
+	return r.run("GET", key)
+}
 
-	return r.readToReply()
+// INCR key
+// Available since 1.0.0.
+// Time complexity: O(1)
+func (r *Redis) Incr(key string) *Reply {
+	return r.run("INCR", key)
 }
