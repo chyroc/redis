@@ -210,3 +210,19 @@ func TestStringBitField(t *testing.T) {
 	// todo overflow test
 	// todo set test
 }
+
+func TestStringDecrIncr(t *testing.T) {
+	r, as := conn(t)
+
+	// exist key decr
+	as.Nil(r.Set("k1", "10").Err())
+	as.Equal(9, r.Decr("k1").Integer())
+
+	// not exist key decr
+	as.Equal(-1, r.Decr("k2").Integer())
+
+	// exist key decy, but not integer
+	as.Nil(r.Set("k3", "string").Err())
+	as.Equal("ERR value is not an integer or out of range", r.Decr("k3").Err().Error())
+
+}

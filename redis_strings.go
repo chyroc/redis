@@ -204,6 +204,11 @@ func (r *Redis) Set(key, value string, options ...SetOption) *Reply {
 	return r.run(args...)
 }
 
+// DECR key
+func (r *Redis) Decr(key string) *Reply {
+	return r.run("DECR", key)
+}
+
 // INCR key
 // Available since 1.0.0.
 // Time complexity: O(1)
