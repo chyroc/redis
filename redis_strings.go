@@ -232,6 +232,11 @@ func (r *Redis) GetRange(key string, start, end int) *Reply {
 	return r.run("GETRANGE", key, strconv.Itoa(start), strconv.Itoa(end))
 }
 
+// GetSet key value
+func (r *Redis) GetSet(key, value string) *Reply {
+	return r.run("GETSET", key, value)
+}
+
 // Incr key
 // Available since 1.0.0.
 // Time complexity: O(1)
@@ -242,6 +247,11 @@ func (r *Redis) Incr(key string) *Reply {
 // IncrBy key
 func (r *Redis) IncrBy(key string, increment int) *Reply {
 	return r.run("INCRBY", key, strconv.Itoa(increment))
+}
+
+// IncrByFloat key increment
+func (r *Redis) IncrByFloat(key string, increment float64) *Reply {
+	return r.run("INCRBYFLOAT", key, strconv.FormatFloat(increment, 'f', 10, 64))
 }
 
 // SetBit key offset value

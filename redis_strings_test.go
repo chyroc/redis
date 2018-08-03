@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func TestStringGetSet(t *testing.T) {
+func TestStringGetSetNxXxExpire(t *testing.T) {
 	r, as := conn(t)
 
 	{
@@ -212,6 +212,8 @@ func TestStringDecrIncr(t *testing.T) {
 
 	// not exist key decr
 	as.Equal(-1, r.Decr("k2").Integer())
+	as.Nil(r.IncrByFloat("k2", 23.1).Err())
+	as.Equal("22.1", r.Get("k2").String())
 
 	// invalid data type
 	as.Nil(r.Set("k3", "string").Err())
@@ -220,4 +222,40 @@ func TestStringDecrIncr(t *testing.T) {
 	as.Equal("ERR value is not an integer or out of range", r.Incr("k3").Err().Error())
 	as.Equal("ERR value is not an integer or out of range", r.IncrBy("k3", 10).Err().Error())
 
+	as.Nil(r.Set("k3", "1.1").Err())
+	as.Nil(r.IncrByFloat("k3", 2.3).Err())
+	as.Equal("3.4", r.Get("k3").String())
+
+	as.Nil(r.Set("k4", "314e-2").Err())
+	as.Equal("314e-2", r.Get("k4").String())
+	as.Nil(r.IncrByFloat("k4", 0).Err())
+	as.Equal("3.14", r.Get("k4").String()) // 执行 INCRBYFLOAT 之后格式会被改成非指数符号
+
+	as.Nil(r.Set("k5", "2.0000").Err())
+	as.Equal("2.0000", r.Get("k5").String())
+	as.Nil(r.IncrByFloat("k5", 0).Err())
+	as.Equal("2", r.Get("k5").String()) // INCRBYFLOAT 会将无用的 0 忽略掉
+}
+
+func TestStringRange(t *testing.T) {
+	r, as := conn(t)
+
+	as.Nil(r.Set("k", "hello, my friend").Err())
+	as.Equal("hello", r.GetRange("k", 0, 4).String())
+	as.Equal("", r.GetRange("k", -1, -5).String()) // 不支持回绕操作
+	as.Equal("end", r.GetRange("k", -3, -1).String())
+	as.Equal("hello, my friend", r.GetRange("k", 0, -1).String())
+	as.Equal("hello, my friend", r.GetRange("k", 0, 9090).String())
+}
+
+func TestStringGetSet(t *testing.T) {
+	r, as := conn(t)
+
+	as.True(r.GetSet("a", "b").Null())
+	as.Equal("b", r.Get("a").String())
+	as.Equal("b", r.GetSet("a", "c").String())
+	as.Equal("c", r.Get("a").String())
+
+	as.Nil(r.SAdd("b", "m").Err())
+	as.Equal("WRONGTYPE Operation against a key holding the wrong kind of value", r.GetSet("b", "m").Err().Error())
 }
