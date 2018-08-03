@@ -29,3 +29,9 @@ const (
 	BitFieldOverflowSat  BitFieldOverflow = "SAT"
 	BitFieldOverflowFail BitFieldOverflow = "FAIL"
 )
+
+// MigrateOption ...
+type MigrateOption struct {
+	Copy    bool // 不移除源实例上的 key
+	Replace bool // 替换目标实例上已存在的 key
+}

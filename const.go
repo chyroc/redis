@@ -16,4 +16,5 @@ var (
 	ErrUnSupportRespType = errors.New("unsupported redis resp type")
 	ErrEmptyCommand      = errors.New("empty command")
 	ErrNull              = errors.New("empty string")
+	ErrKeyNotExist       = errors.New("key not exist")
 )

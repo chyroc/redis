@@ -5,6 +5,7 @@ import (
 	"github.com/Chyroc/redis"
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 )
 
 type testRedis struct {
@@ -106,6 +107,22 @@ func (r *testRedis) RunTest(fun interface{}, args ...interface{}) *testRedis {
 		ns, r.err = f(args[0].(string), args[1].(string))
 		r.str = ns.String
 		r.null = !ns.Valid
+	case func(key string, seconds int) (bool, error):
+		r.boo, r.err = f(args[0].(string), args[1].(int))
+	case func(key string, t time.Time) (bool, error):
+		r.boo, r.err = f(args[0].(string), args[1].(time.Time))
+	case func(pattern string) ([]string, error):
+		var s []string
+		s, r.err = f(args[0].(string))
+		for _, v := range s {
+			r.results = append(r.results, v)
+		}
+	case func() (int, error):
+		var integer int
+		integer, r.err = f()
+		r.number = float64(integer)
+	case func() (string, error):
+		r.str, r.err = f()
 	default:
 		panic("un support function")
 	}
@@ -163,6 +180,11 @@ func (r *testRedis) ExpectError(s string) {
 	r.Error(fmt.Errorf(s))
 }
 
+func (r *testRedis) ExpectBigger(i int) {
+	r.Nil(r.err)
+	r.True(r.number > float64(i))
+}
+
 func (r *testRedis) equalInt64s(ints []int64, expected ...int) {
 	r.Equal(len(expected), len(ints))
 	for k := range ints {
@@ -184,7 +206,6 @@ func conn(t *testing.T) (*testRedis, *assert.Assertions) {
 	as.Nil(err)
 	as.NotNil(r)
 
-	as.Nil(r.Select(2))
 	as.Nil(r.FlushDB())
 
 	return &testRedis{Redis: r, T: t, Assertions: as}, as
