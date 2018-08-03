@@ -209,11 +209,21 @@ func (r *Redis) Decr(key string) *Reply {
 	return r.run("DECR", key)
 }
 
+// DECRBY key decrement
+func (r *Redis) DecrBy(key string, decrement int) *Reply {
+	return r.run("DECRBY", key, strconv.Itoa(decrement))
+}
+
 // INCR key
 // Available since 1.0.0.
 // Time complexity: O(1)
 func (r *Redis) Incr(key string) *Reply {
 	return r.run("INCR", key)
+}
+
+// INCRBY key
+func (r *Redis) IncrBy(key string, increment int) *Reply {
+	return r.run("INCRBY", key, strconv.Itoa(increment))
 }
 
 // SETBIT key offset value

@@ -73,18 +73,6 @@ func TestStringGetSet(t *testing.T) {
 	// TODO test lock with expire + nx xx
 }
 
-func TestStringIncr(t *testing.T) {
-	r, as := conn(t)
-
-	p := r.Incr("page_view")
-	as.Nil(p.Err())
-	as.Equal(1, p.Integer())
-
-	p = r.Incr("page_view")
-	as.Nil(p.Err())
-	as.Equal(2, p.Integer())
-}
-
 func TestStringAppend(t *testing.T) {
 	r, as := conn(t)
 
@@ -214,15 +202,22 @@ func TestStringBitField(t *testing.T) {
 func TestStringDecrIncr(t *testing.T) {
 	r, as := conn(t)
 
-	// exist key decr
+	// exist key
 	as.Nil(r.Set("k1", "10").Err())
-	as.Equal(9, r.Decr("k1").Integer())
+
+	as.Equal(9, r.Decr("k1").Integer())        // decr
+	as.Equal(19, r.IncrBy("k1", 10).Integer()) // incrby
+	as.Equal(14, r.DecrBy("k1", 5).Integer())  // decrby
+	as.Equal(15, r.Incr("k1").Integer())       // incr
 
 	// not exist key decr
 	as.Equal(-1, r.Decr("k2").Integer())
 
-	// exist key decy, but not integer
+	// invalid data type
 	as.Nil(r.Set("k3", "string").Err())
 	as.Equal("ERR value is not an integer or out of range", r.Decr("k3").Err().Error())
+	as.Equal("ERR value is not an integer or out of range", r.DecrBy("k3", 10).Err().Error())
+	as.Equal("ERR value is not an integer or out of range", r.Incr("k3").Err().Error())
+	as.Equal("ERR value is not an integer or out of range", r.IncrBy("k3", 10).Err().Error())
 
 }
