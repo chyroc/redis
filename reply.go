@@ -5,6 +5,7 @@ type Reply struct {
 	null    bool
 	str     string
 	integer int64
+	boo     bool
 }
 
 func (r *Reply) Err() error {
@@ -25,6 +26,10 @@ func (r *Reply) Integer64() int64 {
 
 func (r *Reply) Null() bool {
 	return r.null
+}
+
+func (r *Reply) Bool() bool {
+	return r.boo
 }
 
 func errToReply(err error) *Reply {

@@ -98,3 +98,23 @@ func TestIncr(t *testing.T) {
 	as.Nil(p.Err())
 	as.Equal(2, p.Integer())
 }
+
+func TestAppend(t *testing.T) {
+	r, as := conn(t)
+
+	p := r.Exists("key")
+	as.Nil(p.Err())
+	as.False(p.Bool())
+
+	p = r.Append("key", "value1")
+	as.Nil(p.Err())
+	as.Equal(6, p.Integer())
+
+	p = r.Append("key", " - vl2")
+	as.Nil(p.Err())
+	as.Equal(12, p.Integer())
+
+	p = r.Get("key")
+	as.Nil(p.Err())
+	as.Equal("value1 - vl2", p.String())
+}

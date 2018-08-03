@@ -15,6 +15,11 @@ type SetOption struct {
 	XX     bool // Only set the key if it already exist.
 }
 
+// APPEND key value
+func (r *Redis) Append(key, value string, options ...SetOption) *Reply {
+	return r.run("APPEND", key, value)
+}
+
 // SET key value [expiration EX seconds|PX milliseconds] [NX|XX]
 func (r *Redis) Set(key, value string, options ...SetOption) *Reply {
 	if len(options) > 1 {
