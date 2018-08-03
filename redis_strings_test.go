@@ -259,3 +259,33 @@ func TestStringGetSet(t *testing.T) {
 	as.Nil(r.SAdd("b", "m").Err())
 	as.Equal("WRONGTYPE Operation against a key holding the wrong kind of value", r.GetSet("b", "m").Err().Error())
 }
+
+func TestMultiGetSet(t *testing.T) {
+	r, as := conn(t)
+
+	// mset
+	as.Nil(r.MSet("a", "av").Err())
+	as.Nil(r.MSet("b", "bv", "c", "cv").Err())
+	as.Equal("key value pair, but got 3 arguments", r.MSet("1", "2", "3").Err().Error())
+
+	// mget
+	p := r.MGet("a", "b", "c")
+	as.Nil(p.Err())
+	as.Len(p.Replys(), 3)
+	as.Equal("av", p.Replys()[0].String())
+	as.Equal("bv", p.Replys()[1].String())
+	as.Equal("cv", p.Replys()[2].String())
+
+	p = r.MGet("c", "not-exist")
+	as.Nil(p.Err())
+	as.Len(p.Replys(), 2)
+	as.Equal("cv", p.Replys()[0].String())
+	as.Equal("", p.Replys()[1].String())
+	as.True(p.Replys()[1].Null())
+
+	// msetnx
+	as.False(r.MSetNX("a", "1", "not-exist-1", "1").Bool())
+	as.True(r.Get("not-exist-1").Null())
+	as.True(r.MSetNX("not-exist-1", "1", "not-exist-2", "1").Bool())
+	as.False(r.Get("not-exist-1").Null())
+}

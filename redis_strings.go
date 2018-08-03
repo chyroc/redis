@@ -254,6 +254,31 @@ func (r *Redis) IncrByFloat(key string, increment float64) *Reply {
 	return r.run("INCRBYFLOAT", key, strconv.FormatFloat(increment, 'f', 10, 64))
 }
 
+// MGet ...
+func (r *Redis) MGet(key string, keys ...string) *Reply {
+	return r.run(append([]string{"MGET", key}, keys...)...)
+}
+
+// MSet ...
+func (r *Redis) MSet(key, value string, kvs ...string) *Reply {
+	if len(kvs)%2 != 0 {
+		return errToReply(fmt.Errorf("key value pair, but got %d arguments", len(kvs)+2))
+	}
+
+	return r.run(append([]string{"MSET", key, value}, kvs...)...)
+}
+
+// MSetNX key value [key value ...]
+func (r *Redis) MSetNX(key, value string, kvs ...string) *Reply {
+	if len(kvs)%2 != 0 {
+		return errToReply(fmt.Errorf("key value pair, but got %d arguments", len(kvs)+2))
+	}
+
+	p := r.run(append([]string{"MSETNX", key, value}, kvs...)...)
+	p.fixBool()
+	return p
+}
+
 // SetBit key offset value
 func (r *Redis) SetBit(key string, offset int, SetOrRemove bool) *Reply {
 	p := r.run("SETBIT", key, strconv.Itoa(offset), boolToString(SetOrRemove))
