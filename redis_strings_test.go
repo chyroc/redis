@@ -3,23 +3,9 @@ package redis_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/Chyroc/redis"
 	"time"
 )
-
-func conn(t *testing.T) (*redis.Redis, *assert.Assertions) {
-	as := assert.New(t)
-
-	r, err := redis.Dial("127.0.0.1:6379")
-	as.Nil(err)
-	as.NotNil(r)
-
-	as.Nil(r.FlushDB().Err())
-
-	return r, as
-}
 
 func TestStringGetSet(t *testing.T) {
 	r, as := conn(t)
@@ -142,7 +128,7 @@ func TestStringBit(t *testing.T) {
 	as.Nil(p.Err())
 	as.Equal(2, p.Integer())
 
-	// getbit
+	// getbits
 	p = r.GetBit("bits", 0)
 	as.Nil(p.Err())
 	as.Equal(1, p.Integer())
@@ -150,4 +136,45 @@ func TestStringBit(t *testing.T) {
 	p = r.GetBit("bits", 3)
 	as.Nil(p.Err())
 	as.Equal(1, p.Integer())
+}
+
+func TestBiTop(t *testing.T) {
+	r, as := conn(t)
+
+	// bits-1 1001
+	setbits(t, r, "bits-1", []int{0, 1, 2, 3}, []int{1, 0, 0, 1})
+
+	// bits-1 1011
+	setbits(t, r, "bits-2", []int{0, 1, 2, 3}, []int{1, 0, 1, 1})
+
+	// 1001 & 1011 = 1001
+	p := r.BitOp(redis.BitOpOption{AND: true}, "and-result", "bits-1", "bits-2")
+	as.Nil(p.Err())
+	as.Equal(1, p.Integer())
+	getbits(t, r, "and-result", []int{0, 1, 2, 3}, []int{1, 0, 0, 1})
+
+	// 1001 | 1011 = 1011
+	p = r.BitOp(redis.BitOpOption{OR: true}, "or-result", "bits-1", "bits-2")
+	as.Nil(p.Err())
+	as.Equal(1, p.Integer())
+	getbits(t, r, "or-result", []int{0, 1, 2, 3}, []int{1, 0, 1, 1})
+
+	// 1001 ^ 1011 = 0010
+	p = r.BitOp(redis.BitOpOption{XOR: true}, "xor-result", "bits-1", "bits-2")
+	as.Nil(p.Err())
+	as.Equal(1, p.Integer())
+	getbits(t, r, "xor-result", []int{0, 1, 2, 3}, []int{0, 0, 1, 0})
+
+	// ^1001  = 0110
+	p = r.BitOp(redis.BitOpOption{NOT: true}, "not-result-1", "bits-1")
+	as.Nil(p.Err())
+	as.Equal(1, p.Integer())
+	getbits(t, r, "not-result-1", []int{0, 1, 2, 3}, []int{0, 1, 1, 0})
+
+	// ^1011  = 0100
+	p = r.BitOp(redis.BitOpOption{NOT: true}, "not-result-2", "bits-2")
+	as.Nil(p.Err())
+	as.Equal(1, p.Integer())
+	getbits(t, r, "not-result-2", []int{0, 1, 2, 3}, []int{0, 1, 0, 0})
+
 }
