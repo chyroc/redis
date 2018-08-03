@@ -178,32 +178,6 @@ func (r *Redis) BitField(key string) *BitField {
 	return &BitField{r: r, key: key}
 }
 
-// Set key value [expiration EX seconds|PX milliseconds] [NX|XX]
-func (r *Redis) Set(key, value string, options ...SetOption) *Reply {
-	if len(options) > 1 {
-		return &Reply{err: fmt.Errorf("must have 1 option")}
-	}
-
-	args := []string{"SET", key, value}
-
-	if len(options) > 0 {
-		option := options[0]
-		if option.Expire >= time.Millisecond {
-			args = append(args, "PX", strconv.Itoa(int(option.Expire/time.Millisecond)))
-		}
-		if option.NX && option.XX {
-			return &Reply{err: fmt.Errorf("cannot set NX and XX option at the same time")}
-		} else if option.NX {
-			args = append(args, "NX")
-		} else if option.XX {
-			args = append(args, "XX")
-		}
-
-	}
-
-	return r.run(args...)
-}
-
 // Decr key
 func (r *Redis) Decr(key string) *Reply {
 	return r.run("DECR", key)
@@ -279,9 +253,47 @@ func (r *Redis) MSetNX(key, value string, kvs ...string) *Reply {
 	return p
 }
 
+// Set key value [expiration EX seconds|PX milliseconds] [NX|XX]
+func (r *Redis) Set(key, value string, options ...SetOption) *Reply {
+	if len(options) > 1 {
+		return &Reply{err: fmt.Errorf("must have 1 option")}
+	}
+
+	args := []string{"SET", key, value}
+
+	if len(options) > 0 {
+		option := options[0]
+		if option.Expire >= time.Millisecond {
+			args = append(args, "PX", strconv.Itoa(int(option.Expire/time.Millisecond)))
+		}
+		if option.NX && option.XX {
+			return &Reply{err: fmt.Errorf("cannot set NX and XX option at the same time")}
+		} else if option.NX {
+			args = append(args, "NX")
+		} else if option.XX {
+			args = append(args, "XX")
+		}
+
+	}
+
+	return r.run(args...)
+}
+
 // SetBit key offset value
 func (r *Redis) SetBit(key string, offset int, SetOrRemove bool) *Reply {
 	p := r.run("SETBIT", key, strconv.Itoa(offset), boolToString(SetOrRemove))
 	p.fixBool()
 	return p
 }
+
+// SetRange key offset value
+func (r *Redis) SetRange(key string, offset int, value string) *Reply {
+	return r.run("SETRANGE", key, strconv.Itoa(offset), value)
+}
+
+// StrLen key
+func (r *Redis) StrLen(key string) *Reply {
+	return r.run("STRLEN", key)
+}
+
+// un-impl command: PSETEX / SETEX / SETNX

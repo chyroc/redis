@@ -240,12 +240,23 @@ func TestStringDecrIncr(t *testing.T) {
 func TestStringRange(t *testing.T) {
 	r, as := conn(t)
 
+	// set
 	as.Nil(r.Set("k", "hello, my friend").Err())
+
+	// get-range
 	as.Equal("hello", r.GetRange("k", 0, 4).String())
 	as.Equal("", r.GetRange("k", -1, -5).String()) // 不支持回绕操作
 	as.Equal("end", r.GetRange("k", -3, -1).String())
 	as.Equal("hello, my friend", r.GetRange("k", 0, -1).String())
 	as.Equal("hello, my friend", r.GetRange("k", 0, 9090).String())
+
+	// set-range
+	as.Equal(16, r.SetRange("k", 1, "----").Integer())
+	as.Equal("h----, my friend", r.Get("k").String())
+	as.Equal(24, r.SetRange("k", 20, "====").Integer())
+	as.Equal("h----, my friend\x00\x00\x00\x00====", r.Get("k").String()) // 空白处被"\x00"填充
+
+	as.Equal(24, r.StrLen("k").Integer())
 }
 
 func TestStringGetSet(t *testing.T) {
