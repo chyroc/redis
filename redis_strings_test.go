@@ -21,13 +21,13 @@ func TestStringGetSet(t *testing.T) {
 
 	{
 		// expire
-		as.Nil(r.Set("key-with-expire-time", "hello", redis.SetOption{Expire: time.Millisecond * 1000}).Err())
+		as.Nil(r.Set("key-with-expire-time", "hello", redis.SetOption{Expire: time.Second * 2}).Err())
 		p := r.Get("key-with-expire-time")
 		as.Nil(p.Err())
 		as.False(p.Null())
 		as.Equal("hello", p.String())
 
-		time.Sleep(time.Millisecond * 1000)
+		time.Sleep(time.Second*2 + time.Millisecond*100)
 
 		p = r.Get("key-with-expire-time")
 		as.Nil(p.Err())

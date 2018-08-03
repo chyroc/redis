@@ -6,6 +6,9 @@ go:
   - 1.9.x
   - 1.10.x
 
+services:
+  - redis-server
+
 before_install:
   - go get -u github.com/haya14busa/goverage
 
