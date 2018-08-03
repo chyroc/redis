@@ -41,8 +41,8 @@ func (r *Redis) read() (*Reply, error) {
 			return nullReply(), nil
 		}
 
-		bs := make([]byte, length)
-		if _, err := r.reader.Read(bs); err != nil {
+		bs, err := readBytes(r.reader, int(length))
+		if err != nil {
 			return nil, err
 		}
 
@@ -50,6 +50,22 @@ func (r *Redis) read() (*Reply, error) {
 
 		return bytesToReply(bs), nil
 	case '*':
+		// multi bulk reply
+		count, err := readIntBeforeCRCL(r.reader)
+		if err != nil {
+			return nil, err
+		}
+
+		var replys []*Reply
+		for i := 0; i < int(count); i++ {
+			reply, err := r.read()
+			if err != nil {
+				return nil, err
+			}
+			replys = append(replys, reply)
+		}
+
+		return &Reply{replys: replys}, nil
 	}
 
 	return nil, UnSupportRespType
@@ -79,4 +95,12 @@ func readIntBeforeCRCL(reader *bufio.Reader) (int64, error) {
 		return 0, err
 	}
 	return c, nil
+}
+
+func readBytes(reader *bufio.Reader, length int) ([]byte, error) {
+	bs := make([]byte, length)
+	if _, err := reader.Read(bs); err != nil {
+		return nil, err
+	}
+	return bs, nil
 }

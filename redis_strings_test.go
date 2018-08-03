@@ -186,3 +186,27 @@ func TestBiTop(t *testing.T) {
 		as.Equal("`bc`ab", r.Get("dest").String())
 	}
 }
+
+func TestStringBitField(t *testing.T) {
+	r, as := conn(t)
+
+	datatype := redis.SignedInt(4) // -8 ~ 7
+	// incrby
+	p := r.BitField("mykey").Incrby(datatype, 10, 1).Run()
+	as.Nil(p.Err())
+	as.Len(p.Replys(), 1)
+	as.Equal(1, p.Replys()[0].Integer())
+
+	// incrby -> incrby -> get
+	p = r.BitField("mykey").Incrby(datatype, 10, 1).
+		Incrby(datatype, 10, 1).
+		Get(datatype, 10).Run()
+	as.Nil(p.Err())
+	as.Len(p.Replys(), 3)
+	as.Equal(2, p.Replys()[0].Integer())
+	as.Equal(3, p.Replys()[1].Integer())
+	as.Equal(3, p.Replys()[2].Integer())
+
+	// todo overflow test
+	// todo set test
+}

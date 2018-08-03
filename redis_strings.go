@@ -94,6 +94,80 @@ func (r *Redis) BitOp(option BitOpOption, destkey string, keys ...string) *Reply
 	return errToReply(fmt.Errorf("invalid operation, should be one of: or, and, xor and not"))
 }
 
+type BitField struct {
+	r       *Redis
+	key     string
+	err     error
+	actions []string
+}
+
+type BitFieldOverflow string
+
+const (
+	BitFieldOverflowWrap BitFieldOverflow = "WRAP"
+	BitFieldOverflowSat  BitFieldOverflow = "SAT"
+	BitFieldOverflowFail BitFieldOverflow = "FAIL"
+)
+
+func (b *BitField) Get(typ DataType, offset int) *BitField {
+	if b.err != nil {
+		return b
+	}
+	if err := typ.Err(); err != nil {
+		b.err = err
+		return b
+	}
+	b.actions = append(b.actions, "GET", typ.String(), strconv.Itoa(offset))
+	return b
+}
+
+func (b *BitField) Set(typ DataType, offset, value int) *BitField {
+	if b.err != nil {
+		return b
+	}
+	if err := typ.Err(); err != nil {
+		b.err = err
+		return b
+	}
+	b.actions = append(b.actions, "SET", typ.String(), strconv.Itoa(offset), strconv.Itoa(value))
+	return b
+}
+
+func (b *BitField) Incrby(typ DataType, offset, increment int) *BitField {
+	if b.err != nil {
+		return b
+	}
+	if err := typ.Err(); err != nil {
+		b.err = err
+		return b
+	}
+	b.actions = append(b.actions, "INCRBY", typ.String(), strconv.Itoa(offset), strconv.Itoa(increment))
+	return b
+}
+
+func (b *BitField) Overflow(f BitFieldOverflow) *BitField {
+	if b.err != nil {
+		return b
+	}
+	b.actions = append(b.actions, "OVERFLOW", string(f))
+	return b
+}
+
+func (b *BitField) Run() *Reply {
+	if b.err != nil {
+		return errToReply(b.err)
+	}
+	return b.r.run(append([]string{"BITFIELD", b.key}, b.actions...)...)
+}
+
+// BITFIELD key [GET type offset] [SET type offset value] [INCRBY type offset increment] [OVERFLOW WRAP|SAT|FAIL]
+//
+//   Available since 3.2.0.
+//   Time complexity: O(1) for each subcommand specified
+func (r *Redis) BitField(key string) *BitField {
+	return &BitField{r: r, key: key}
+}
+
 // GET key
 func (r *Redis) Get(key string) *Reply {
 	return r.run("GET", key)

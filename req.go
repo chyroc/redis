@@ -45,7 +45,6 @@ func (r Redis) cmd(args ...string) error {
 		buf.Write(p)
 		buf.Write(CRLF)
 	}
-	//fmt.Printf("send [%#v]\n", buf.String())
 
 	return r.write(buf.Bytes())
 }

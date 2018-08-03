@@ -6,6 +6,8 @@ type Reply struct {
 	str     string
 	integer int64
 	boo     bool
+
+	replys []*Reply
 }
 
 func (p *Reply) Err() error {
@@ -30,6 +32,10 @@ func (p *Reply) Null() bool {
 
 func (p *Reply) Bool() bool {
 	return p.boo
+}
+
+func (p *Reply) Replys() []*Reply {
+	return p.replys
 }
 
 func (p *Reply) fixBool() {
