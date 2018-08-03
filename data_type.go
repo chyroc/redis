@@ -40,3 +40,9 @@ func UnSignedInt(length int) DataType {
 func SignedInt(length int) DataType {
 	return integer{signed: true, length: length}
 }
+
+// NullString ...
+type NullString struct {
+	String string
+	Valid  bool // Valid is true if String is not NULL
+}
