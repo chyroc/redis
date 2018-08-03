@@ -20,6 +20,31 @@ func (r *Redis) Append(key, value string, options ...SetOption) *Reply {
 	return r.run("APPEND", key, value)
 }
 
+// BITCOUNT key [start] [end]
+func (r *Redis) BitCount(key string, startEnd ...int) *Reply {
+	args := []string{"BITCOUNT", key}
+	switch len(startEnd) {
+	case 0:
+	case 1:
+		args = append(args, strconv.Itoa(startEnd[0]))
+	case 2:
+		args = append(args, strconv.Itoa(startEnd[0]), strconv.Itoa(startEnd[1]))
+	default:
+		return errToReply(fmt.Errorf("expect get 0, 1 or 2 arguments, but got %v", startEnd))
+	}
+	return r.run(args...)
+}
+
+// GET key
+func (r *Redis) Get(key string) *Reply {
+	return r.run("GET", key)
+}
+
+// GETBIT key offset
+func (r *Redis) GetBit(key string, offset int) *Reply {
+	return r.run("GETBIT", key, strconv.Itoa(offset))
+}
+
 // SET key value [expiration EX seconds|PX milliseconds] [NX|XX]
 func (r *Redis) Set(key, value string, options ...SetOption) *Reply {
 	if len(options) > 1 {
@@ -46,14 +71,16 @@ func (r *Redis) Set(key, value string, options ...SetOption) *Reply {
 	return r.run(args...)
 }
 
-// GET key
-func (r *Redis) Get(key string) *Reply {
-	return r.run("GET", key)
-}
-
 // INCR key
 // Available since 1.0.0.
 // Time complexity: O(1)
 func (r *Redis) Incr(key string) *Reply {
 	return r.run("INCR", key)
+}
+
+// SETBIT key offset value
+func (r *Redis) SetBit(key string, offset int, SetOrRemove bool) *Reply {
+	p := r.run("SETBIT", key, strconv.Itoa(offset), boolToString(SetOrRemove))
+	p.fixBool()
+	return p
 }

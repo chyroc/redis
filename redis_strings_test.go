@@ -87,7 +87,7 @@ func TestStringGetSet(t *testing.T) {
 	// TODO test lock with expire + nx xx
 }
 
-func TestIncr(t *testing.T) {
+func TestStringIncr(t *testing.T) {
 	r, as := conn(t)
 
 	p := r.Incr("page_view")
@@ -99,7 +99,7 @@ func TestIncr(t *testing.T) {
 	as.Equal(2, p.Integer())
 }
 
-func TestAppend(t *testing.T) {
+func TestStringAppend(t *testing.T) {
 	r, as := conn(t)
 
 	p := r.Exists("key")
@@ -117,4 +117,37 @@ func TestAppend(t *testing.T) {
 	p = r.Get("key")
 	as.Nil(p.Err())
 	as.Equal("value1 - vl2", p.String())
+}
+
+func TestStringBit(t *testing.T) {
+	r, as := conn(t)
+
+	// bitcount
+	p := r.BitCount("bits")
+	as.Nil(p.Err())
+	as.Equal(0, p.Integer())
+
+	// setbit
+	p = r.SetBit("bits", 0, true)
+	as.Nil(p.Err())
+
+	p = r.BitCount("bits")
+	as.Nil(p.Err())
+	as.Equal(1, p.Integer())
+
+	p = r.SetBit("bits", 3, true)
+	as.Nil(p.Err())
+
+	p = r.BitCount("bits")
+	as.Nil(p.Err())
+	as.Equal(2, p.Integer())
+
+	// getbit
+	p = r.GetBit("bits", 0)
+	as.Nil(p.Err())
+	as.Equal(1, p.Integer())
+
+	p = r.GetBit("bits", 3)
+	as.Nil(p.Err())
+	as.Equal(1, p.Integer())
 }

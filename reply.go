@@ -8,28 +8,34 @@ type Reply struct {
 	boo     bool
 }
 
-func (r *Reply) Err() error {
-	return r.err
+func (p *Reply) Err() error {
+	return p.err
 }
 
-func (r *Reply) String() string {
-	return r.str
+func (p *Reply) String() string {
+	return p.str
 }
 
-func (r *Reply) Integer() int {
-	return int(r.integer)
+func (p *Reply) Integer() int {
+	return int(p.integer)
 }
 
-func (r *Reply) Integer64() int64 {
-	return r.integer
+func (p *Reply) Integer64() int64 {
+	return p.integer
 }
 
-func (r *Reply) Null() bool {
-	return r.null
+func (p *Reply) Null() bool {
+	return p.null
 }
 
-func (r *Reply) Bool() bool {
-	return r.boo
+func (p *Reply) Bool() bool {
+	return p.boo
+}
+
+func (p *Reply) fixBool() {
+	if p.err == nil {
+		p.boo = p.integer == 1
+	}
 }
 
 func errToReply(err error) *Reply {
