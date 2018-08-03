@@ -23,7 +23,6 @@ $<参数 N 的字节数量> CR LF
 */
 
 func (r Redis) cmd(args ...string) error {
-	fmt.Printf("send %#v\n", args)
 
 	if len(args) == 0 {
 		return ErrEmptyCommand
@@ -51,12 +50,16 @@ func (r Redis) cmd(args ...string) error {
 
 func (r Redis) run(args ...string) *Reply {
 	if err := r.cmd(args...); err != nil {
+		fmt.Printf("send %#v [error:%s]\n", args, err)
 		return errToReply(err)
 	}
 
 	reply, err := r.read()
 	if err != nil {
+		fmt.Printf("send %#v [error:%s]\n", args, err)
 		return errToReply(err)
 	}
+
+	fmt.Printf("send %#v | got %v\n", args, reply)
 	return reply
 }

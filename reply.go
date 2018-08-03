@@ -1,55 +1,70 @@
 package redis
 
+import (
+	"bytes"
+	"fmt"
+)
+
 // Reply ...
 type Reply struct {
 	err     error
 	null    bool
 	str     string
 	integer int64
-	boo     bool
 
 	replys []*Reply
 }
 
-// Err ...
-func (p *Reply) Err() error {
-	return p.err
-}
-
 // String ...
 func (p *Reply) String() string {
-	return p.str
+	if p.err != nil {
+		return fmt.Sprintf("Err: %v", p.err)
+	}
+	if p.null {
+		return "NULL"
+	}
+	if p.str != "" {
+		return fmt.Sprintf("String: %v", p.str)
+	}
+	if p.integer != 0 {
+		return fmt.Sprintf("Integet: %v", p.integer)
+	}
+	if len(p.replys) > 0 {
+		buf := new(bytes.Buffer)
+		buf.WriteString("List:")
+		for _, v := range p.replys {
+			buf.WriteString("  ")
+			buf.WriteString(v.String())
+		}
+		return buf.String()
+	}
+	return ""
 }
 
 // Integer ...
-func (p *Reply) Integer() int {
-	return int(p.integer)
-}
-
-// Integer64 ...
-func (p *Reply) Integer64() int64 {
-	return p.integer
-}
-
-// Null ...
-func (p *Reply) Null() bool {
-	return p.null
-}
-
-// Bool ...
-func (p *Reply) Bool() bool {
-	return p.boo
-}
-
-// Replys ...
-func (p *Reply) Replys() []*Reply {
-	return p.replys
-}
-
-func (p *Reply) fixBool() {
-	if p.err == nil {
-		p.boo = p.integer == 1
+func (p *Reply) int() (int, error) {
+	if p.err != nil {
+		return 0, p.err
 	}
+	return int(p.integer), nil // TODO int64?
+}
+
+func (p *Reply) string() (NullString, error) {
+	if p.err != nil {
+		return NullString{}, p.err
+	}
+	if p.null {
+		return NullString{}, nil
+	}
+
+	return NullString{String: p.str, Valid: true}, nil
+}
+
+func (p *Reply) fixBool() (bool, error) {
+	if p.err == nil {
+		return p.integer == 1, nil
+	}
+	return false, p.err
 }
 
 func errToReply(err error) *Reply {
@@ -59,14 +74,6 @@ func errToReply(err error) *Reply {
 	return nil
 }
 
-func intToReply(i int64) *Reply {
-	return &Reply{integer: i}
-}
-
 func bytesToReply(bs []byte) *Reply {
 	return &Reply{str: string(bs)}
-}
-
-func nullReply() *Reply {
-	return &Reply{null: true}
 }

@@ -8,295 +8,220 @@ import (
 )
 
 func TestStringGetSetNxXxExpire(t *testing.T) {
-	r, as := conn(t)
+	r, _ := conn(t)
 
 	{
 		// get and set
-		as.Nil(r.Set("key", "hello").Err())
-		p := r.Get("key")
-		as.Nil(p.Err())
-		as.False(p.Null())
-		as.Equal("hello", p.String())
+		r.RunTest(r.Set, "key", "hello").Expect(true)
+		r.RunTest(r.Set, "key", "hello")
+		r.RunTest(r.Get, "key").Expect("hello")
 	}
 
 	{
 		// expire
-		as.Nil(r.Set("key-with-expire-time", "hello", redis.SetOption{Expire: time.Second * 2}).Err())
-		p := r.Get("key-with-expire-time")
-		as.Nil(p.Err())
-		as.False(p.Null())
-		as.Equal("hello", p.String())
+		r.RunTest(r.Set, "key-with-expire-time", "hello", redis.SetOption{Expire: time.Second * 2}).Expect(true)
+		r.RunTest(r.Get, "key-with-expire-time").Expect("hello")
 
 		time.Sleep(time.Second*2 + time.Millisecond*100)
 
-		p = r.Get("key-with-expire-time")
-		as.Nil(p.Err())
-		as.True(p.Null())
+		r.RunTest(r.Get, "key-with-expire-time").ExpectError(redis.ErrNull.Error())
 	}
 
 	{
 		// nx set id not exist
-		p := r.Set("not-exists-key", "hello", redis.SetOption{NX: true})
-		as.Nil(p.Err())
-		as.False(p.Null())
-		as.Equal("OK", p.String())
+		r.RunTest(r.Set, "not-exists-key", "hello", redis.SetOption{NX: true}).Expect(true)
+		r.RunTest(r.Set, "not-exists-key", "new hello", redis.SetOption{NX: true}).Expect(false)
 
-		p = r.Set("not-exists-key", "new hello", redis.SetOption{NX: true})
-		as.Nil(p.Err())
-		as.True(p.Null())
-
-		p = r.Get("not-exists-key")
-		as.Nil(p.Err())
-		as.Equal("hello", p.String())
+		r.RunTest(r.Get, "not-exists-key").Expect("hello")
 	}
 
 	{
 		// xx only set when already exist
-		p := r.Set("exists-key", "hello", redis.SetOption{XX: true})
-		as.Nil(p.Err())
-		as.Empty(p.String())
-		as.True(p.Null())
+		r.RunTest(r.Set, "exists-key", "hello", redis.SetOption{XX: true}).Expect(false)
+		r.RunTest(r.Set, "exists-key", "value").Expect(true)
+		r.RunTest(r.Set, "exists-key", "new hello", redis.SetOption{XX: true}).Expect(true)
 
-		p = r.Set("exists-key", "value")
-		as.Nil(p.Err())
-
-		p = r.Set("exists-key", "new hello", redis.SetOption{XX: true})
-		as.Nil(p.Err())
-		as.Equal("OK", p.String())
-		as.False(p.Null())
-
-		p = r.Get("exists-key")
-		as.Nil(p.Err())
-		as.Equal("new hello", p.String())
+		r.RunTest(r.Get, "exists-key").Expect("new hello")
 	}
 
 	// TODO test lock with expire + nx xx
 }
 
 func TestStringAppend(t *testing.T) {
-	r, as := conn(t)
+	r, _ := conn(t)
 
-	p := r.Exists("key")
-	as.Nil(p.Err())
-	as.False(p.Bool())
+	r.RunTest(r.Exists, "key").Expect(false)
 
-	p = r.Append("key", "value1")
-	as.Nil(p.Err())
-	as.Equal(6, p.Integer())
+	r.RunTest(r.Append, "key", "value1").Expect(6)
+	r.RunTest(r.Append, "key", " - vl2").Expect(12)
 
-	p = r.Append("key", " - vl2")
-	as.Nil(p.Err())
-	as.Equal(12, p.Integer())
-
-	p = r.Get("key")
-	as.Nil(p.Err())
-	as.Equal("value1 - vl2", p.String())
+	r.RunTest(r.Get, "key").Expect("value1 - vl2")
 }
 
 func TestStringBit(t *testing.T) {
 	r, as := conn(t)
+	as.Equal(1, 1)
 
 	// bitcount
-	p := r.BitCount("bits")
-	as.Nil(p.Err())
-	as.Equal(0, p.Integer())
+	r.RunTest(r.BitCount, "bits", 0)
 
 	// setbit
-	p = r.SetBit("bits", 0, true)
-	as.Nil(p.Err())
-
-	p = r.BitCount("bits")
-	as.Nil(p.Err())
-	as.Equal(1, p.Integer())
-
-	p = r.SetBit("bits", 3, true)
-	as.Nil(p.Err())
-
-	p = r.BitCount("bits")
-	as.Nil(p.Err())
-	as.Equal(2, p.Integer())
+	r.RunTest(r.SetBit, "bits", 0, true).Expect(0)
+	r.RunTest(r.BitCount, "bits", 1)
+	r.RunTest(r.SetBit, "bits", 3, true).Expect(0)
+	r.RunTest(r.BitCount, "bits", 2)
 
 	// getbits
-	p = r.GetBit("bits", 0)
-	as.Nil(p.Err())
-	as.Equal(1, p.Integer())
-
-	p = r.GetBit("bits", 3)
-	as.Nil(p.Err())
-	as.Equal(1, p.Integer())
+	r.RunTest(r.GetBit, "bits", 0).Expect(1)
+	r.RunTest(r.GetBit, "bits", 3).Expect(1)
 }
 
 func TestBiTop(t *testing.T) {
-	r, as := conn(t)
+	r, _ := conn(t)
 
 	{
-		// bits-1 1001
-		setbits(t, r, "bits-1", []int{0, 1, 2, 3}, []int{1, 0, 0, 1})
-
-		// bits-1 1011
-		setbits(t, r, "bits-2", []int{0, 1, 2, 3}, []int{1, 0, 1, 1})
+		setbits(t, r, "bits-1", []int{0, 1, 2, 3}, []int{1, 0, 0, 1}) // bits-1 1001
+		setbits(t, r, "bits-2", []int{0, 1, 2, 3}, []int{1, 0, 1, 1}) // bits-1 1011
 
 		// 1001 & 1011 = 1001
-		p := r.BitOp(redis.BitOpOption{AND: true}, "and-result", "bits-1", "bits-2")
-		as.Nil(p.Err())
-		as.Equal(1, p.Integer())
+		r.RunTest(r.BitOp, redis.BitOpAND, "and-result", "bits-1", "bits-2").Expect(1)
 		getbits(t, r, "and-result", []int{0, 1, 2, 3}, []int{1, 0, 0, 1})
 
 		// 1001 | 1011 = 1011
-		p = r.BitOp(redis.BitOpOption{OR: true}, "or-result", "bits-1", "bits-2")
-		as.Nil(p.Err())
-		as.Equal(1, p.Integer())
+		r.RunTest(r.BitOp, redis.BitOpOR, "or-result", "bits-1", "bits-2").Expect(1)
 		getbits(t, r, "or-result", []int{0, 1, 2, 3}, []int{1, 0, 1, 1})
 
 		// 1001 ^ 1011 = 0010
-		p = r.BitOp(redis.BitOpOption{XOR: true}, "xor-result", "bits-1", "bits-2")
-		as.Nil(p.Err())
-		as.Equal(1, p.Integer())
+		r.RunTest(r.BitOp, redis.BitOpXOR, "xor-result", "bits-1", "bits-2").Expect(1)
 		getbits(t, r, "xor-result", []int{0, 1, 2, 3}, []int{0, 0, 1, 0})
 
 		// ^1001  = 0110
-		p = r.BitOp(redis.BitOpOption{NOT: true}, "not-result-1", "bits-1")
-		as.Nil(p.Err())
-		as.Equal(1, p.Integer())
+		r.RunTest(r.BitOp, redis.BitOpNOT, "not-result-1", "bits-1").Expect(1)
 		getbits(t, r, "not-result-1", []int{0, 1, 2, 3}, []int{0, 1, 1, 0})
 
 		// ^1011  = 0100
-		p = r.BitOp(redis.BitOpOption{NOT: true}, "not-result-2", "bits-2")
-		as.Nil(p.Err())
-		as.Equal(1, p.Integer())
+		r.RunTest(r.BitOp, redis.BitOpNOT, "not-result-2", "bits-2").Expect(1)
 		getbits(t, r, "not-result-2", []int{0, 1, 2, 3}, []int{0, 1, 0, 0})
 	}
 
 	{
-		as.Nil(r.Set("key1", "foobar").Err())
-		as.Nil(r.Set("key2", "abcdef").Err())
-		as.Nil(r.BitOp(redis.BitOpOption{AND: true}, "dest", "key1", "key2").Err())
-		as.Equal("`bc`ab", r.Get("dest").String())
+		r.RunTest(r.Set, "key1", "foobar").Expect(true)
+		r.RunTest(r.Set, "key2", "abcdef").Expect(true)
+		r.RunTest(r.BitOp, redis.BitOpAND, "dest", "key1", "key2").Expect(6)
+		r.RunTest(r.Get, "dest").Expect("`bc`ab")
 	}
 }
 
 func TestStringBitField(t *testing.T) {
-	r, as := conn(t)
+	r, _ := conn(t)
 
 	datatype := redis.SignedInt(4) // -8 ~ 7
+
 	// incrby
-	p := r.BitField("mykey").IncrBy(datatype, 10, 1).Run()
-	as.Nil(p.Err())
-	as.Len(p.Replys(), 1)
-	as.Equal(1, p.Replys()[0].Integer())
+	r.RunTest(r.BitField("mykey").IncrBy(datatype, 10, 1).Run).Expect(1)
 
 	// incrby -> incrby -> get
-	p = r.BitField("mykey").IncrBy(datatype, 10, 1).
+	r.RunTest(r.BitField("mykey").
 		IncrBy(datatype, 10, 1).
-		Get(datatype, 10).Run()
-	as.Nil(p.Err())
-	as.Len(p.Replys(), 3)
-	as.Equal(2, p.Replys()[0].Integer())
-	as.Equal(3, p.Replys()[1].Integer())
-	as.Equal(3, p.Replys()[2].Integer())
+		IncrBy(datatype, 10, 1).
+		Get(datatype, 10).Run).Expect(2, 3, 3)
 
 	// todo overflow test
 	// todo set test
 }
 
 func TestStringDecrIncr(t *testing.T) {
-	r, as := conn(t)
+	r, _ := conn(t)
 
 	// exist key
-	as.Nil(r.Set("k1", "10").Err())
+	r.RunTest(r.Set, "k1", "10").Expect(true)
 
-	as.Equal(9, r.Decr("k1").Integer())        // decr
-	as.Equal(19, r.IncrBy("k1", 10).Integer()) // incrby
-	as.Equal(14, r.DecrBy("k1", 5).Integer())  // decrby
-	as.Equal(15, r.Incr("k1").Integer())       // incr
+	r.RunTest(r.Decr, "k1").Expect(9)        // decr
+	r.RunTest(r.IncrBy, "k1", 10).Expect(19) // incrby
+	r.RunTest(r.DecrBy, "k1", 5).Expect(14)  // decrby
+	r.RunTest(r.Incr, "k1").Expect(15)       // incr
 
 	// not exist key decr
-	as.Equal(-1, r.Decr("k2").Integer())
-	as.Nil(r.IncrByFloat("k2", 23.1).Err())
-	as.Equal("22.1", r.Get("k2").String())
+	r.RunTest(r.Decr, "k2").Expect(-1)
+	r.RunTest(r.IncrByFloat, "k2", 23.1).Expect(22.1)
+	r.RunTest(r.Get, "k2").Expect("22.1")
 
 	// invalid data type
-	as.Nil(r.Set("k3", "string").Err())
-	as.Equal("ERR value is not an integer or out of range", r.Decr("k3").Err().Error())
-	as.Equal("ERR value is not an integer or out of range", r.DecrBy("k3", 10).Err().Error())
-	as.Equal("ERR value is not an integer or out of range", r.Incr("k3").Err().Error())
-	as.Equal("ERR value is not an integer or out of range", r.IncrBy("k3", 10).Err().Error())
+	r.RunTest(r.Set, "k3", "string").Expect(true)
+	r.RunTest(r.Decr, "k3").ExpectError("ERR value is not an number or out of range")
+	r.RunTest(r.DecrBy, "k3", 10).ExpectError("ERR value is not an number or out of range")
+	r.RunTest(r.Incr, "k3").ExpectError("ERR value is not an number or out of range")
+	r.RunTest(r.IncrBy, "k3", 10).ExpectError("ERR value is not an number or out of range")
 
-	as.Nil(r.Set("k3", "1.1").Err())
-	as.Nil(r.IncrByFloat("k3", 2.3).Err())
-	as.Equal("3.4", r.Get("k3").String())
+	r.RunTest(r.Set, "k3", "1.1").Expect(true)
+	r.RunTest(r.IncrByFloat, "k3", 2.3).Expect(3.4)
+	r.RunTest(r.Get, "k3").Expect("3.4")
 
-	as.Nil(r.Set("k4", "314e-2").Err())
-	as.Equal("314e-2", r.Get("k4").String())
-	as.Nil(r.IncrByFloat("k4", 0).Err())
-	as.Equal("3.14", r.Get("k4").String()) // 执行 INCRBYFLOAT 之后格式会被改成非指数符号
+	r.RunTest(r.Set, "k4", "314e-2").Expect(true)
+	r.RunTest(r.Get, "k4").Expect("314e-2")
+	r.RunTest(r.IncrByFloat, "k4", 0).Expect(3.14)
+	r.RunTest(r.Get, "k4").Expect("3.14") // 执行 INCRBYFLOAT 之后格式会被改成非指数符号
 
-	as.Nil(r.Set("k5", "2.0000").Err())
-	as.Equal("2.0000", r.Get("k5").String())
-	as.Nil(r.IncrByFloat("k5", 0).Err())
-	as.Equal("2", r.Get("k5").String()) // INCRBYFLOAT 会将无用的 0 忽略掉
+	r.RunTest(r.Set, "k5", "2.0000").Expect(true)
+	r.RunTest(r.Get, "k5").Expect("2.0000")
+	r.RunTest(r.IncrByFloat, "k5", 0).Expect(2)
+	r.RunTest(r.Get, "k5").Expect("2") // INCRBYFLOAT 会将无用的 0 忽略掉
 }
 
 func TestStringRange(t *testing.T) {
-	r, as := conn(t)
+	r, _ := conn(t)
 
 	// set
-	as.Nil(r.Set("k", "hello, my friend").Err())
+	r.RunTest(r.Set, "k", "hello, my friend").Expect(true)
 
 	// get-range
-	as.Equal("hello", r.GetRange("k", 0, 4).String())
-	as.Equal("", r.GetRange("k", -1, -5).String()) // 不支持回绕操作
-	as.Equal("end", r.GetRange("k", -3, -1).String())
-	as.Equal("hello, my friend", r.GetRange("k", 0, -1).String())
-	as.Equal("hello, my friend", r.GetRange("k", 0, 9090).String())
+	r.RunTest(r.GetRange, "k", 0, 4).Expect("hello")
+	r.RunTest(r.GetRange, "k", -1, -5).Expect("") // 不支持回绕操作
+
+	r.RunTest(r.GetRange, "k", -3, -1).Expect("end")
+	r.RunTest(r.GetRange, "k", 0, -1).Expect("hello, my friend")
+	r.RunTest(r.GetRange, "k", 0, 9090).Expect("hello, my friend")
 
 	// set-range
-	as.Equal(16, r.SetRange("k", 1, "----").Integer())
-	as.Equal("h----, my friend", r.Get("k").String())
-	as.Equal(24, r.SetRange("k", 20, "====").Integer())
-	as.Equal("h----, my friend\x00\x00\x00\x00====", r.Get("k").String()) // 空白处被"\x00"填充
+	r.RunTest(r.SetRange, "k", 1, "----").Expect(16)
+	r.RunTest(r.Get, "k").Expect("h----, my friend")
+	r.RunTest(r.SetRange, "k", 20, "====").Expect(24)
+	r.RunTest(r.Get, "k").Expect("h----, my friend\x00\x00\x00\x00====") // 空白处被"\x00"填充
 
-	as.Equal(24, r.StrLen("k").Integer())
+	// strlen
+	r.RunTest(r.StrLen, "k").Expect(24)
 }
 
 func TestStringGetSet(t *testing.T) {
-	r, as := conn(t)
+	r, _ := conn(t)
 
-	as.True(r.GetSet("a", "b").Null())
-	as.Equal("b", r.Get("a").String())
-	as.Equal("b", r.GetSet("a", "c").String())
-	as.Equal("c", r.Get("a").String())
+	r.RunTest(r.GetSet, "a", "b").ExpectNull()
 
-	as.Nil(r.SAdd("b", "m").Err())
-	as.Equal("WRONGTYPE Operation against a key holding the wrong kind of value", r.GetSet("b", "m").Err().Error())
+	r.RunTest(r.Get, "a").Expect("b")
+	r.RunTest(r.GetSet, "a", "c").Expect("b")
+	r.RunTest(r.Get, "a").Expect("c")
+
+	r.RunTest(r.SAdd, "b", "m").Expect(1)
+	r.RunTest(r.SAdd, "b", "k", "l").Expect(2)
+	r.RunTest(r.GetSet, "b", "m").ExpectError("WRONGTYPE Operation against a key holding the wrong kind of value")
 }
 
 func TestMultiGetSet(t *testing.T) {
 	r, as := conn(t)
 
 	// mset
-	as.Nil(r.MSet("a", "av").Err())
-	as.Nil(r.MSet("b", "bv", "c", "cv").Err())
-	as.Equal("key value pair, but got 3 arguments", r.MSet("1", "2", "3").Err().Error())
+	as.Nil(r.MSet("a", "av"))
+	as.Nil(r.MSet("b", "bv", "c", "cv"))
+	as.Equal("key value pair, but got 3 arguments", r.MSet("1", "2", "3").Error())
 
 	// mget
-	p := r.MGet("a", "b", "c")
-	as.Nil(p.Err())
-	as.Len(p.Replys(), 3)
-	as.Equal("av", p.Replys()[0].String())
-	as.Equal("bv", p.Replys()[1].String())
-	as.Equal("cv", p.Replys()[2].String())
+	r.RunTest(r.MGet, "a", "b", "c").Expect(redis.NullString{"av", true}, redis.NullString{"bv", true}, redis.NullString{"cv", true})
 
-	p = r.MGet("c", "not-exist")
-	as.Nil(p.Err())
-	as.Len(p.Replys(), 2)
-	as.Equal("cv", p.Replys()[0].String())
-	as.Equal("", p.Replys()[1].String())
-	as.True(p.Replys()[1].Null())
+	r.RunTest(r.MGet, "c", "not-exist").Expect(redis.NullString{"cv", true}, redis.NullString{})
 
 	// msetnx
-	as.False(r.MSetNX("a", "1", "not-exist-1", "1").Bool())
-	as.True(r.Get("not-exist-1").Null())
-	as.True(r.MSetNX("not-exist-1", "1", "not-exist-2", "1").Bool())
-	as.False(r.Get("not-exist-1").Null())
+	r.RunTest(r.MSetNX, "a", "1", "not-exist-1", "1").Expect(false)
+	r.RunTest(r.Get, "not-exist-1").ExpectError(redis.ErrNull.Error())
+	r.RunTest(r.MSetNX, "not-exist-1", "1", "not-exist-2", "1").Expect(true)
+	r.RunTest(r.Get, "not-exist-1").ExpectError(redis.ErrNull.Error())
 }

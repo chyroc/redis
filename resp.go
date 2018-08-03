@@ -30,7 +30,7 @@ func (r *Redis) read() (*Reply, error) {
 		if err != nil {
 			return nil, err
 		}
-		return intToReply(length), nil
+		return &Reply{integer: length}, nil
 	case '$':
 		length, err := readIntBeforeCRCL(r.reader)
 		if err != nil {
@@ -38,7 +38,7 @@ func (r *Redis) read() (*Reply, error) {
 		}
 
 		if length == -1 {
-			return nullReply(), nil
+			return &Reply{null: true}, nil
 		}
 
 		bs, err := readBytes(r.reader, int(length))
