@@ -180,14 +180,14 @@ func TestStringBitField(t *testing.T) {
 
 	datatype := redis.SignedInt(4) // -8 ~ 7
 	// incrby
-	p := r.BitField("mykey").Incrby(datatype, 10, 1).Run()
+	p := r.BitField("mykey").IncrBy(datatype, 10, 1).Run()
 	as.Nil(p.Err())
 	as.Len(p.Replys(), 1)
 	as.Equal(1, p.Replys()[0].Integer())
 
 	// incrby -> incrby -> get
-	p = r.BitField("mykey").Incrby(datatype, 10, 1).
-		Incrby(datatype, 10, 1).
+	p = r.BitField("mykey").IncrBy(datatype, 10, 1).
+		IncrBy(datatype, 10, 1).
 		Get(datatype, 10).Run()
 	as.Nil(p.Err())
 	as.Len(p.Replys(), 3)

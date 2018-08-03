@@ -26,7 +26,7 @@ func (r Redis) cmd(args ...string) error {
 	fmt.Printf("send %#v\n", args)
 
 	if len(args) == 0 {
-		return EmptyCommand
+		return ErrEmptyCommand
 	}
 
 	buf := new(bytes.Buffer)
@@ -58,6 +58,5 @@ func (r Redis) run(args ...string) *Reply {
 	if err != nil {
 		return errToReply(err)
 	}
-
 	return reply
 }

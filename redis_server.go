@@ -1,6 +1,6 @@
 package redis
 
-// FLUSHDB
+// FlushDB ...
 func (r *Redis) FlushDB() *Reply {
 	return r.run("FLUSHDB")
 }

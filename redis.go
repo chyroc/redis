@@ -6,11 +6,13 @@ import (
 	"time"
 )
 
+// Redis ...
 type Redis struct {
 	conn   net.Conn
 	reader *bufio.Reader
 }
 
+// Dial conn redis
 func Dial(addr string) (*Redis, error) {
 	conn, err := net.DialTimeout("tcp", addr, time.Second)
 	if err != nil {

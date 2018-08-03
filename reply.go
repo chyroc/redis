@@ -1,5 +1,6 @@
 package redis
 
+// Reply ...
 type Reply struct {
 	err     error
 	null    bool
@@ -10,30 +11,37 @@ type Reply struct {
 	replys []*Reply
 }
 
+// Err ...
 func (p *Reply) Err() error {
 	return p.err
 }
 
+// String ...
 func (p *Reply) String() string {
 	return p.str
 }
 
+// Integer ...
 func (p *Reply) Integer() int {
 	return int(p.integer)
 }
 
+// Integer64 ...
 func (p *Reply) Integer64() int64 {
 	return p.integer
 }
 
+// Null ...
 func (p *Reply) Null() bool {
 	return p.null
 }
 
+// Bool ...
 func (p *Reply) Bool() bool {
 	return p.boo
 }
 
+// Replys ...
 func (p *Reply) Replys() []*Reply {
 	return p.replys
 }
@@ -57,10 +65,6 @@ func intToReply(i int64) *Reply {
 
 func bytesToReply(bs []byte) *Reply {
 	return &Reply{str: string(bs)}
-}
-
-func strToReply(s string) *Reply {
-	return &Reply{str: s}
 }
 
 func nullReply() *Reply {

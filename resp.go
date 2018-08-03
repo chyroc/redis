@@ -68,7 +68,7 @@ func (r *Redis) read() (*Reply, error) {
 		return &Reply{replys: replys}, nil
 	}
 
-	return nil, UnSupportRespType
+	return nil, ErrUnSupportRespType
 }
 
 func readUntilCRCL(reader *bufio.Reader) ([]byte, error) {

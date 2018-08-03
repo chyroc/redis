@@ -9,18 +9,19 @@ import (
 // https://redis.io/commands#string
 // http://redisdoc.com/string/index.html
 
+// SetOption ...
 type SetOption struct {
 	Expire time.Duration
 	NX     bool // Only set the key if it does not already exist.
 	XX     bool // Only set the key if it already exist.
 }
 
-// APPEND key value
+// Append key value
 func (r *Redis) Append(key, value string, options ...SetOption) *Reply {
 	return r.run("APPEND", key, value)
 }
 
-// BITCOUNT key [start] [end]
+// BitCount key [start] [end]
 func (r *Redis) BitCount(key string, startEnd ...int) *Reply {
 	args := []string{"BITCOUNT", key}
 	switch len(startEnd) {
@@ -35,6 +36,7 @@ func (r *Redis) BitCount(key string, startEnd ...int) *Reply {
 	return r.run(args...)
 }
 
+// BitOpOption ...
 type BitOpOption struct {
 	AND bool
 	OR  bool
@@ -42,7 +44,7 @@ type BitOpOption struct {
 	NOT bool
 }
 
-// BITOP operation destkey key [key ...]
+// BitOp operation destkey key [key ...]
 //
 // Available since 2.6.0.
 // Time complexity: O(N)
@@ -94,6 +96,7 @@ func (r *Redis) BitOp(option BitOpOption, destkey string, keys ...string) *Reply
 	return errToReply(fmt.Errorf("invalid operation, should be one of: or, and, xor and not"))
 }
 
+// BitField ...
 type BitField struct {
 	r       *Redis
 	key     string
@@ -101,14 +104,17 @@ type BitField struct {
 	actions []string
 }
 
+// BitFieldOverflow type
 type BitFieldOverflow string
 
+// BitFieldOverflow type
 const (
 	BitFieldOverflowWrap BitFieldOverflow = "WRAP"
 	BitFieldOverflowSat  BitFieldOverflow = "SAT"
 	BitFieldOverflowFail BitFieldOverflow = "FAIL"
 )
 
+// Get type offset
 func (b *BitField) Get(typ DataType, offset int) *BitField {
 	if b.err != nil {
 		return b
@@ -121,6 +127,7 @@ func (b *BitField) Get(typ DataType, offset int) *BitField {
 	return b
 }
 
+// Set type offset, value
 func (b *BitField) Set(typ DataType, offset, value int) *BitField {
 	if b.err != nil {
 		return b
@@ -133,7 +140,8 @@ func (b *BitField) Set(typ DataType, offset, value int) *BitField {
 	return b
 }
 
-func (b *BitField) Incrby(typ DataType, offset, increment int) *BitField {
+// IncrBy type offset increment
+func (b *BitField) IncrBy(typ DataType, offset, increment int) *BitField {
 	if b.err != nil {
 		return b
 	}
@@ -145,6 +153,7 @@ func (b *BitField) Incrby(typ DataType, offset, increment int) *BitField {
 	return b
 }
 
+// Overflow WARP|SAT|FAIL
 func (b *BitField) Overflow(f BitFieldOverflow) *BitField {
 	if b.err != nil {
 		return b
@@ -153,6 +162,7 @@ func (b *BitField) Overflow(f BitFieldOverflow) *BitField {
 	return b
 }
 
+// Run ...
 func (b *BitField) Run() *Reply {
 	if b.err != nil {
 		return errToReply(b.err)
@@ -160,7 +170,7 @@ func (b *BitField) Run() *Reply {
 	return b.r.run(append([]string{"BITFIELD", b.key}, b.actions...)...)
 }
 
-// BITFIELD key [GET type offset] [SET type offset value] [INCRBY type offset increment] [OVERFLOW WRAP|SAT|FAIL]
+// BitField key [GET type offset] [SET type offset value] [INCRBY type offset increment] [OVERFLOW WRAP|SAT|FAIL]
 //
 //   Available since 3.2.0.
 //   Time complexity: O(1) for each subcommand specified
@@ -168,17 +178,7 @@ func (r *Redis) BitField(key string) *BitField {
 	return &BitField{r: r, key: key}
 }
 
-// GET key
-func (r *Redis) Get(key string) *Reply {
-	return r.run("GET", key)
-}
-
-// GETBIT key offset
-func (r *Redis) GetBit(key string, offset int) *Reply {
-	return r.run("GETBIT", key, strconv.Itoa(offset))
-}
-
-// SET key value [expiration EX seconds|PX milliseconds] [NX|XX]
+// Set key value [expiration EX seconds|PX milliseconds] [NX|XX]
 func (r *Redis) Set(key, value string, options ...SetOption) *Reply {
 	if len(options) > 1 {
 		return &Reply{err: fmt.Errorf("must have 1 option")}
@@ -204,29 +204,47 @@ func (r *Redis) Set(key, value string, options ...SetOption) *Reply {
 	return r.run(args...)
 }
 
-// DECR key
+// Decr key
 func (r *Redis) Decr(key string) *Reply {
 	return r.run("DECR", key)
 }
 
-// DECRBY key decrement
+// DecrBy key decrement
 func (r *Redis) DecrBy(key string, decrement int) *Reply {
 	return r.run("DECRBY", key, strconv.Itoa(decrement))
 }
 
-// INCR key
+// Get key
+func (r *Redis) Get(key string) *Reply {
+	return r.run("GET", key)
+}
+
+// GetBit key offset
+func (r *Redis) GetBit(key string, offset int) *Reply {
+	return r.run("GETBIT", key, strconv.Itoa(offset))
+}
+
+// GetRange key start end
+//
+// 返回 key 中字符串值的子字符串，字符串的截取范围由 start 和 end 两个偏移量决定(包括 start 和 end 在内)。
+// 负数偏移量表示从字符串最后开始计数， -1 表示最后一个字符， -2 表示倒数第二个，以此类推。
+func (r *Redis) GetRange(key string, start, end int) *Reply {
+	return r.run("GETRANGE", key, strconv.Itoa(start), strconv.Itoa(end))
+}
+
+// Incr key
 // Available since 1.0.0.
 // Time complexity: O(1)
 func (r *Redis) Incr(key string) *Reply {
 	return r.run("INCR", key)
 }
 
-// INCRBY key
+// IncrBy key
 func (r *Redis) IncrBy(key string, increment int) *Reply {
 	return r.run("INCRBY", key, strconv.Itoa(increment))
 }
 
-// SETBIT key offset value
+// SetBit key offset value
 func (r *Redis) SetBit(key string, offset int, SetOrRemove bool) *Reply {
 	p := r.run("SETBIT", key, strconv.Itoa(offset), boolToString(SetOrRemove))
 	p.fixBool()
