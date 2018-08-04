@@ -5,12 +5,13 @@ import (
 	"testing"
 )
 
-func TestConnection(t *testing.T) {
-	r, as := conn(t)
+var e *redis.Redis
 
-	// as.Nil(r.Set("a", "b").Err())
-	r.RunTest(r.Set, "a", "b").Expect(true)
-	r.RunTest(r.Get, "a").Expect("b")
-	as.Nil(r.Select(2))
-	r.RunTest(r.Get, "a").Expect(redis.NullString{})
+func TestConnection(t *testing.T) {
+	r := conn(t)
+
+	r.RunTest(e.Set, "a", "b").Expect(true)
+	r.RunTest(e.Get, "a").Expect("b")
+	r.RunTest(e.Select, 2).ExpectSuccess()
+	r.RunTest(e.Get, "a").Expect(redis.NullString{})
 }
