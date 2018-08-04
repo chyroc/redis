@@ -2,8 +2,9 @@ package redis_test
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // every ele in b in a slice

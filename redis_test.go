@@ -44,7 +44,7 @@ type testRedis struct {
 	mapp     map[string]string
 }
 
-func (r *testRedis) execTestFunction(fun interface{}, args ...interface{}) {
+func (r *testRedis) run(fun interface{}, args ...interface{}) {
 	ft := reflect.TypeOf(fun)
 	fv := reflect.ValueOf(fun)
 	r.Equal(reflect.Func, ft.Kind())
@@ -161,7 +161,7 @@ func (r *testRedis) execTestFunction(fun interface{}, args ...interface{}) {
 
 func (r *testRedis) RunTest(fun interface{}, args ...interface{}) *testRedis {
 	r = &testRedis{redis: r.redis, t: r.t, Assertions: r.Assertions}
-	r.execTestFunction(fun, args...)
+	r.run(fun, args...)
 	return r
 }
 
