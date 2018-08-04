@@ -2,9 +2,9 @@ package redis
 
 import (
 	"bufio"
+	"fmt"
 	"net"
 	"time"
-	"fmt"
 )
 
 // Redis ...

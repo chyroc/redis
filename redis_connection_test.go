@@ -1,7 +1,6 @@
 package redis_test
 
 import (
-	"fmt"
 	"github.com/Chyroc/redis"
 	"os"
 	"testing"
@@ -21,12 +20,8 @@ func TestConnection(t *testing.T) {
 func TestMultiRdisInstance(t *testing.T) {
 	r := conn(t)
 
-	_, ok := os.LookupEnv("TRAVIS")
-	if !ok {
+	if _, ok := os.LookupEnv("TRAVIS"); !ok {
 		t.SkipNow()
-	}
-	for _, v := range os.Environ() {
-		fmt.Printf("%v\n", v)
 	}
 
 	r.RunTest(e.Set, "greeting", "Hello from 6379 instance").Expect(true)
