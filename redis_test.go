@@ -167,6 +167,12 @@ func (r *testRedis) RunTest(fun interface{}, args ...interface{}) *testRedis {
 		}
 	case func(index int) error:
 		r.err = f(args[0].(int))
+	case func(host string, port int, key string, destinationDB int, timeout time.Duration, options ...redis.MigrateOption) error:
+		if len(args) > 5 {
+			r.err = f(args[0].(string), args[1].(int), args[2].(string), args[3].(int), args[4].(time.Duration), args[5].(redis.MigrateOption))
+		} else {
+			r.err = f(args[0].(string), args[1].(int), args[2].(string), args[3].(int), args[4].(time.Duration))
+		}
 	default:
 		panic(fmt.Sprintf("un support function: %#v", f))
 	}
