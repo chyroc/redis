@@ -265,11 +265,7 @@ func (r *Redis) IncrBy(key string, increment int) (int, error) {
 //   返回值：
 //     执行命令之后 key 的值。
 func (r *Redis) IncrByFloat(key string, increment float64) (float64, error) {
-	p := r.run("INCRBYFLOAT", key, strconv.FormatFloat(increment, 'f', 10, 64))
-	if p.err != nil {
-		return 0, p.err
-	}
-	return strconv.ParseFloat(p.str, 64)
+	return r.run("INCRBYFLOAT", key, strconv.FormatFloat(increment, 'f', 10, 64)).fixFloat()
 }
 
 // MGet ...
@@ -283,20 +279,7 @@ func (r *Redis) IncrByFloat(key string, increment float64) (float64, error) {
 //   返回值：
 //     一个包含所有给定 key 的值的列表。
 func (r *Redis) MGet(key string, keys ...string) ([]NullString, error) {
-	p := r.run(append([]string{"MGET", key}, keys...)...)
-	if p.err != nil {
-		return nil, p.err
-	}
-
-	var ns []NullString
-	for _, v := range p.replys {
-		if v.err != nil {
-			return nil, v.err // TODO 这里真的有error吗
-		}
-		n, _ := v.string()
-		ns = append(ns, n)
-	}
-	return ns, nil
+	return r.run(append([]string{"MGET", key}, keys...)...).fixNullStringSlice()
 }
 
 // MSet ...

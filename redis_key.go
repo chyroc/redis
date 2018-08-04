@@ -132,19 +132,7 @@ func (r *Redis) ExpireAt(key string, t time.Time) (bool, error) {
 //   返回值：
 //     符合给定模式的 key 列表。
 func (r *Redis) Keys(pattern string) ([]string, error) {
-	p := r.run("KEYS", pattern)
-	if p.err != nil {
-		return nil, p.err
-	}
-
-	var s []string
-	for _, v := range p.replys {
-		if v.err != nil {
-			return nil, v.err // TODO 真的有吗
-		}
-		s = append(s, v.str)
-	}
-	return s, nil
+	return r.run("KEYS", pattern).fixStringSlice()
 }
 
 // Migrate host port key destination-db timeout [COPY] [REPLACE]

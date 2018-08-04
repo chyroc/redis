@@ -224,10 +224,13 @@ func TestScan(t *testing.T) {
 	r.RunTest(e.Scan(redis.ScanOption{Match: "a?*"}).ALL).ExpectContains("a1a", "a1c", "a1b")
 
 	// each
-	var s []string
+	var vv []string
+	var kk []int
 	assert.Nil(t, e.Scan().Each(func(k int, v string) error {
-		s = append(s, v)
+		vv = append(vv, v)
+		kk = append(kk, k)
 		return nil
 	}))
-	stringContains(s, []string{"a", "b", "c", "d"})
+	stringContains(r.t, vv, []string{"a", "b", "c", "d"})
+	r.Equal([]int{0, 1, 2, 3, 4, 5, 6}, kk)
 }

@@ -5,34 +5,34 @@ import (
 	"strconv"
 )
 
-// Scan ...
-type Scan struct {
+// HScan ...
+type HScan struct {
 	redis *Redis
 
 	err  error
+	key  string
 	args []string
 
 	cursor int
-	result []string
+	result map[string]string
 
 	eachCursor int
 }
 
 // Each ...
-func (r *Scan) Each(f func(k int, v string) error) error {
+func (r *HScan) Each(f func(k int, field, value string) error) error {
 	r.eachCursor = -1
 	for {
 		if r.cursor == 0 {
 			return nil // end
 		}
-
-		result, err := r.Next()
+		m, err := r.Next()
 		if err != nil {
 			return err
 		}
-		for _, v := range result {
+		for k, v := range m {
 			r.eachCursor++
-			if err := f(r.eachCursor, v); err != nil {
+			if err := f(r.eachCursor, k, v); err != nil {
 				return err
 			}
 		}
@@ -40,7 +40,7 @@ func (r *Scan) Each(f func(k int, v string) error) error {
 }
 
 // ALL ...
-func (r *Scan) ALL() ([]string, error) {
+func (r *HScan) ALL() (map[string]string, error) {
 	for {
 		_, err := r.Next()
 		if err == ErrIteratorEnd {
@@ -52,14 +52,14 @@ func (r *Scan) ALL() ([]string, error) {
 }
 
 // Next ...
-func (r *Scan) Next() ([]string, error) {
+func (r *HScan) Next() (map[string]string, error) {
 	if r.cursor == 0 {
 		return nil, ErrIteratorEnd
 	} else if r.cursor == -1 {
 		r.cursor = 0
 	}
 
-	p := r.redis.run(append([]string{"SCAN", strconv.Itoa(r.cursor)}, r.args...)...)
+	p := r.redis.run(append([]string{"HSCAN", r.key, strconv.Itoa(r.cursor)}, r.args...)...)
 	if p.err != nil {
 		return nil, p.err
 	}
@@ -78,13 +78,15 @@ func (r *Scan) Next() ([]string, error) {
 	}
 
 	// item
-	var s []string
-	for _, v := range p.replys[1].replys {
-		s = append(s, v.str)
+	m, err := p.replys[1].fixMap()
+	if err != nil {
+		return nil, err
 	}
 
 	r.cursor = next
-	r.result = append(r.result, s...)
+	for k, v := range m {
+		r.result[k] = v
+	}
 
-	return s, nil
+	return m, nil
 }
