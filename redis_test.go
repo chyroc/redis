@@ -2,11 +2,29 @@ package redis_test
 
 import (
 	"fmt"
-	"github.com/Chyroc/redis"
-	"github.com/stretchr/testify/assert"
+	"reflect"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/Chyroc/redis"
 )
+
+var zeroTimeDuration = time.Duration(0)
+
+func NewTest(t *testing.T) *testRedis {
+	as := assert.New(t)
+
+	var err error
+	e, err = redis.Dial("127.0.0.1:6379")
+	as.Nil(err)
+	as.NotNil(e)
+
+	as.Nil(e.FlushDB())
+
+	return &testRedis{redis: e, t: t, Assertions: as}
+}
 
 type testRedis struct {
 	redis *redis.Redis
@@ -22,164 +40,123 @@ type testRedis struct {
 	results  []interface{}
 }
 
-func (r *testRedis) RunTest(fun interface{}, args ...interface{}) *testRedis {
-	r.err = nil
-	r.number = 0
-	r.str = ""
-	r.boo = false
-	r.null = false
-	r.duration = nil
-	r.results = nil
+func (r *testRedis) execTestFunction(fun interface{}, args ...interface{}) {
+	ft := reflect.TypeOf(fun)
+	fv := reflect.ValueOf(fun)
+	r.Equal(reflect.Func, ft.Kind())
+	r.Equal(reflect.Func, fv.Kind())
 
-	switch f := fun.(type) {
-	case func(string, ...int) (int, error):
-		var ingeter int
-		ingeter, r.err = f(args[0].(string), interfacesToIntSlice(args, 1)...)
-		r.number = float64(ingeter)
-	case func(string, string) (int, error):
-		var ingeter int
-		ingeter, r.err = f(args[0].(string), args[1].(string))
-		r.number = float64(ingeter)
-	case func(op redis.BitOp, destkey string, keys ...string) (int, error):
-		var ingeter int
-		ingeter, r.err = f(args[0].(redis.BitOp), args[1].(string), interfacesToStringSlice(args, 2)...)
-		r.number = float64(ingeter)
-	case func() ([]int64, error):
-		ints, err := f()
-		r.err = err
-		for _, v := range ints {
-			r.results = append(r.results, v)
-		}
-	case func(string) (int, error):
-		var ingeter int
-		ingeter, r.err = f(args[0].(string))
-		r.number = float64(ingeter)
-	case func(string, int) (int, error):
-		var ingeter int
-		ingeter, r.err = f(args[0].(string), args[1].(int))
-		r.number = float64(ingeter)
-	case func(string) (string, error):
-		r.str, r.err = f(args[0].(string))
-	case func(string, int, int) (string, error):
-		r.str, r.err = f(args[0].(string), args[1].(int), args[2].(int))
-	case func(string, string) (string, error):
-		r.str, r.err = f(args[0].(string), args[1].(string))
-	case func(string, float64) (float64, error):
-		switch args[1].(type) {
-		case int:
-			r.number, r.err = f(args[0].(string), float64(args[1].(int)))
-		default:
-			r.number, r.err = f(args[0].(string), args[1].(float64))
-		}
-	case func(string, ...string) ([]redis.NullString, error):
-		var ns []redis.NullString
-		ns, r.err = f(args[0].(string), interfacesToStringSlice(args, 1)...)
-		for _, v := range ns {
-			r.results = append(r.results, v)
-		}
-	case func(key, value string, options ...redis.SetOption) (bool, error):
-		if len(args) > 2 {
-			r.boo, r.err = f(args[0].(string), args[1].(string), args[2].(redis.SetOption))
-		} else {
-			r.boo, r.err = f(args[0].(string), args[1].(string))
-		}
-	case func(key, value string, kvs ...string) (bool, error):
-		r.boo, r.err = f(args[0].(string), args[1].(string), interfacesToStringSlice(args, 2)...)
-	case func(key string, offset int, value string) (int, error):
-		var integer int
-		integer, r.err = f(args[0].(string), args[1].(int), args[2].(string))
-		r.number = float64(integer)
-	case func(key string, offset int, SetOrRemove bool) (int, error):
-		var integer int
-		integer, r.err = f(args[0].(string), args[1].(int), args[2].(bool))
-		r.number = float64(integer)
-	case func(key string) (bool, error):
-		r.boo, r.err = f(args[0].(string))
-	case func(key string, member ...string) (int, error):
-		var integer int
-		integer, r.err = f(args[0].(string), interfacesToStringSlice(args, 1)...)
-		r.number = float64(integer)
-	case func(key string) (redis.NullString, error):
-		var ns redis.NullString
-		ns, r.err = f(args[0].(string))
-		r.str = ns.String
-		r.null = !ns.Valid
-	case func(key, value string) (redis.NullString, error):
-		var ns redis.NullString
-		ns, r.err = f(args[0].(string), args[1].(string))
-		r.str = ns.String
-		r.null = !ns.Valid
-	case func(key string, seconds int) (bool, error):
-		r.boo, r.err = f(args[0].(string), args[1].(int))
-	case func(key string, t time.Time) (bool, error):
-		r.boo, r.err = f(args[0].(string), args[1].(time.Time))
-	case func(pattern string) ([]string, error):
-		var s []string
-		s, r.err = f(args[0].(string))
-		for _, v := range s {
-			r.results = append(r.results, v)
-		}
-	case func() (int, error):
-		var integer int
-		integer, r.err = f()
-		r.number = float64(integer)
-	case func() (string, error):
-		r.str, r.err = f()
-	case func(key string) (*time.Duration, error):
-		r.duration, r.err = f(args[0].(string))
-	case func(key string, t time.Duration) (bool, error):
-		r.boo, r.err = f(args[0].(string), args[1].(time.Duration))
-	case func() (redis.NullString, error):
-		var ns redis.NullString
-		ns, r.err = f()
-		r.str = ns.String
-		r.null = !ns.Valid
-	case func(key, value string, kvs ...string) error:
-		r.err = f(args[0].(string), args[1].(string), interfacesToStringSlice(args, 2)...)
-	case func(key, newkey string) error:
-		r.err = f(args[0].(string), args[1].(string))
-	case func(key, newkey string) (bool, error):
-		r.boo, r.err = f(args[0].(string), args[1].(string))
-	case func(key string, ttl time.Duration, serializedValue string, Replace bool) error:
-		r.err = f(args[0].(string), interfaceToDutation(args[1]), args[2].(string), args[3].(bool))
-	case func(key string) (redis.KeyType, error):
-		var k redis.KeyType
-		k, r.err = f(args[0].(string))
-		r.str = string(k)
-	case func(options ...redis.ScanOption) ([]string, error):
-		if len(args) > 0 {
-			f(args[0].(redis.ScanOption))
-		} else {
-			f()
-		}
-	case func() ([]string, error):
-		var s []string
-		s, r.err = f()
-		for _, v := range s {
-			r.results = append(r.results, v)
-		}
-	case func(index int) error:
-		r.err = f(args[0].(int))
-	case func(host string, port int, key string, destinationDB int, timeout time.Duration, options ...redis.MigrateOption) error:
-		if len(args) > 5 {
-			r.err = f(args[0].(string), args[1].(int), args[2].(string), args[3].(int), interfaceToDutation(args[4]), args[5].(redis.MigrateOption))
-		} else {
-			r.err = f(args[0].(string), args[1].(int), args[2].(string), args[3].(int), interfaceToDutation(args[4]))
-		}
-	default:
-		panic(fmt.Sprintf("un support function: %#v", f))
+	atLeastCallInNumber := ft.NumIn()
+	if ft.IsVariadic() {
+		atLeastCallInNumber--
+	}
+	if atLeastCallInNumber > len(args) {
+		r.Fail(fmt.Sprintf("expect at least %d arguments , but got %d: %#v", atLeastCallInNumber, len(args), args))
 	}
 
-	return r
+	var in []reflect.Value
+	for i := 0; i < ft.NumIn(); i++ {
+		ithCallInType := ft.In(i)
+
+		switch ithCallInType.Kind() {
+		case reflect.String:
+			switch args[i].(type) {
+			case redis.BitOp:
+				in = append(in, reflect.ValueOf(args[i].(redis.BitOp)))
+			default:
+				in = append(in, reflect.ValueOf(args[i].(string)))
+			}
+		case reflect.Bool:
+			in = append(in, reflect.ValueOf(args[i].(bool)))
+		case reflect.Int:
+			in = append(in, reflect.ValueOf(args[i].(int)))
+		case reflect.Int64:
+			switch l := args[i].(type) {
+			case int, int64, time.Duration:
+				in = append(in, reflect.ValueOf(l))
+			default:
+				panic(fmt.Sprintf("unsupprt %v\n", l))
+			}
+		case reflect.Float64:
+			switch l := args[i].(type) {
+			case int:
+				in = append(in, reflect.ValueOf(float64(l)))
+			default:
+				in = append(in, reflect.ValueOf(args[i].(float64)))
+			}
+		case reflect.Struct:
+			switch l := args[i].(type) {
+			case redis.SetOption, redis.MigrateOption, redis.ScanOption, time.Time:
+				in = append(in, reflect.ValueOf(l))
+			default:
+				panic(fmt.Sprintf("unsupport %v: %#v\n", ithCallInType.Kind(), args[i]))
+			}
+		case reflect.Slice:
+			in = append(in, interfaceSliceToReflectValue(ithCallInType, args, i))
+			break
+		default:
+			panic(fmt.Sprintf("unsupport %v\n", ithCallInType.Kind()))
+		}
+	}
+
+	var out []reflect.Value
+	if ft.IsVariadic() {
+		if len(in) < ft.NumIn() {
+			in = append(in, reflect.ValueOf(nil))
+		}
+		out = fv.CallSlice(in)
+	} else {
+		out = fv.Call(in)
+	}
+
+	for i := 0; i < ft.NumOut(); i++ {
+		ithCallRealOut := out[i] // 比input多的
+		ithCallOutType := ft.Out(i)
+
+		switch ithCallRealOut.Kind() {
+		case reflect.Int:
+			r.number = float64(ithCallRealOut.Int())
+		case reflect.Float64:
+			r.number = ithCallRealOut.Float()
+		case reflect.Bool:
+			r.boo = ithCallRealOut.Bool()
+		case reflect.String:
+			r.str = ithCallRealOut.String()
+		case reflect.Interface:
+			if ithCallRealOut.IsNil() {
+				continue
+			}
+			switch l := ithCallRealOut.Interface().(type) {
+			case error:
+				r.err = l
+			default:
+				panic(fmt.Sprintf("unsupport interafce: [%v: %#v]", ithCallRealOut.Elem().Kind(), ithCallRealOut))
+			}
+		case reflect.Struct:
+			switch l := ithCallRealOut.Interface().(type) {
+			case redis.NullString:
+				r.str = l.String
+				r.null = !l.Valid
+			default:
+				panic(fmt.Sprintf("unsupport %v: %#v\n", ithCallRealOut.Kind(), ithCallRealOut.Interface()))
+			}
+		case reflect.Slice:
+			r.results = toInterfaceSlice(ithCallOutType, ithCallRealOut)
+		case reflect.Ptr:
+			if !ithCallRealOut.IsNil() {
+				t := ithCallRealOut.Elem().Interface().(time.Duration)
+				r.duration = &t
+			}
+		default:
+			panic(fmt.Sprintf("unsupport %v\n", ithCallRealOut.Kind()))
+		}
+	}
 }
 
-func (r *testRedis) equal(expected, actual interface{}) {
-	switch actual.(type) {
-	case int64:
-		r.Equal(int64(expected.(int)), actual)
-	default:
-		r.Equal(expected, actual)
-	}
+func (r *testRedis) RunTest(fun interface{}, args ...interface{}) *testRedis {
+	r = &testRedis{redis: r.redis, t: r.t, Assertions: r.Assertions}
+	r.execTestFunction(fun, args...)
+	return r
 }
 
 func (r *testRedis) Expect(expected ...interface{}) *testRedis {
@@ -275,67 +252,23 @@ func (r *testRedis) ExpectContains(s ...string) {
 	}
 }
 
-func (r *testRedis) equalInt64s(ints []int64, expected ...int) {
-	r.Equal(len(expected), len(ints))
-	for k := range ints {
-		r.Equal(int64(expected[k]), ints[k])
-	}
-}
-
-func (r *testRedis) equalInts(ints []int, expected ...int) {
-	r.Equal(len(expected), len(ints))
-	for k := range ints {
-		r.Equal(expected[k], ints[k])
-	}
-}
-
-func conn(t *testing.T) *testRedis {
-	as := assert.New(t)
-
-	var err error
-	e, err = redis.Dial("127.0.0.1:6379")
-	as.Nil(err)
-	as.NotNil(e)
-
-	as.Nil(e.FlushDB())
-
-	return &testRedis{redis: e, t: t, Assertions: as}
-}
-
-func setbits(t *testing.T, r *testRedis, key string, index, result []int) {
-	as := assert.New(t)
-	as.Equal(len(index), len(result))
-
+func (r *testRedis) SetBits(key string, index, result []int) {
+	r.Equal(len(index), len(result))
 	for k := range index {
 		c := false
 		if result[k] == 1 {
 			c = true
 		}
-		//r.RunTest(e.SetBit, index[k], c).Expect(1)
-		_, err := r.redis.SetBit(key, index[k], c)
-		as.Nil(err)
+		r.RunTest(e.SetBit, key, index[k], c).ExpectSuccess()
 	}
-	getbits(t, r, key, index, result)
+	//r.GetBits(key, index, result)
 }
 
-func getbits(t *testing.T, r *testRedis, key string, index, result []int) {
-	as := assert.New(t)
-	as.Equal(len(index), len(result))
-
+func (r *testRedis) GetBits(key string, index, result []int) {
+	r.Equal(len(index), len(result))
 	for k := range index {
 		r.RunTest(e.GetBit, key, index[k]).Expect(result[k])
 	}
-}
-
-func interfacesToIntSlice(args []interface{}, startIndex int) []int {
-	var is []int
-	for k, v := range args {
-		if k < startIndex {
-			continue
-		}
-		is = append(is, v.(int))
-	}
-	return is
 }
 
 // startIndex: 1 ~ len
@@ -350,29 +283,73 @@ func interfacesToStringSlice(args []interface{}, startIndex int) []string {
 	return str
 }
 
-// every ele in b in a slice
-func stringContains(a, b []string) bool {
-	m := make(map[string]bool)
-	for _, v := range a {
-		m[v] = true
-	}
-	for _, v := range b {
-		if !m[v] {
-			return false
+func interfaceSliceToReflectValue(typ reflect.Type, args []interface{}, i int) reflect.Value {
+	if i >= len(args) {
+		switch typ.Elem().Kind() {
+		case reflect.String:
+			var str []string
+			return reflect.ValueOf(&str).Elem()
+		default:
+			if typ.Elem().ConvertibleTo(reflect.TypeOf(redis.SetOption{})) {
+				var str []redis.SetOption
+				return reflect.ValueOf(&str).Elem()
+			}
 		}
+		panic(fmt.Sprintf("unsupport zero value: %v %v", typ.Kind(), typ.Elem().Kind()))
 	}
-	return true
+
+	switch args[i].(type) {
+	case int:
+		var v = reflect.ValueOf(&[]int{}).Elem()
+		for _, s := range args[i:] {
+			v = reflect.Append(v, reflect.ValueOf(s.(int)))
+		}
+		return v
+	case string:
+		var v = reflect.ValueOf(&[]string{}).Elem()
+		for _, s := range args[i:] {
+			v = reflect.Append(v, reflect.ValueOf(s.(string)))
+		}
+		return v
+	case redis.SetOption:
+		var v = reflect.ValueOf(&[]redis.SetOption{}).Elem()
+		for _, s := range args[i:] {
+			v = reflect.Append(v, reflect.ValueOf(s.(redis.SetOption)))
+		}
+		return v
+	default:
+		panic(fmt.Sprintf("expect slice, but got %#v\n", args[i:]))
+	}
 }
 
-func interfaceToDutation(s interface{}) time.Duration {
-	var t time.Duration
-	switch s.(type) {
-	case int:
-		t = time.Duration(t)
-	case time.Duration:
-		t = s.(time.Duration)
+func toInterfaceSlice(typ reflect.Type, value reflect.Value) []interface{} {
+	var slice []interface{}
+
+	switch typ.Elem().Kind() {
+	case reflect.String:
+		for _, v := range value.Convert(reflect.TypeOf([]string{})).Interface().([]string) {
+			slice = append(slice, v)
+		}
+	case reflect.Int64:
+		for _, v := range value.Convert(reflect.TypeOf([]int64{})).Interface().([]int64) {
+			slice = append(slice, v)
+		}
+	case reflect.Int:
+		for _, v := range value.Convert(reflect.TypeOf([]int{})).Interface().([]int) {
+			slice = append(slice, v)
+		}
+	case reflect.Struct:
+		switch typ.Elem().Name() {
+		case "NullString":
+			for _, v := range value.Convert(reflect.TypeOf([]redis.NullString{})).Interface().([]redis.NullString) {
+				slice = append(slice, v)
+			}
+		default:
+			panic(fmt.Sprintf("expect slice , but got %#v", value))
+		}
 	default:
-		panic(fmt.Sprintf("%v connot convert to time.Duration", s))
+		panic(fmt.Sprintf("expect slice , but got %#v", value))
 	}
-	return t
+
+	return slice
 }

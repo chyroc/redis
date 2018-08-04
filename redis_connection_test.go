@@ -9,7 +9,7 @@ import (
 var e *redis.Redis
 
 func TestConnection(t *testing.T) {
-	r := conn(t)
+	r := NewTest(t)
 
 	r.RunTest(e.Set, "a", "b").Expect(true)
 	r.RunTest(e.Get, "a").Expect("b")
@@ -18,7 +18,7 @@ func TestConnection(t *testing.T) {
 }
 
 func TestMultiRdisInstance(t *testing.T) {
-	r := conn(t)
+	r := NewTest(t)
 
 	if _, ok := os.LookupEnv("TRAVIS"); !ok {
 		t.SkipNow()

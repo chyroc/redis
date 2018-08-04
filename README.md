@@ -7,7 +7,7 @@ golang redis client / go语言实现的redis客户端
 [godoc文档](https://godoc.org/github.com/Chyroc/redis)
 
 ## TODO
-* [ ] connect
+* [x] connect
 * [x] key
 * [x] string
 * [ ] hash

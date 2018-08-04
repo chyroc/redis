@@ -8,7 +8,7 @@ import (
 )
 
 func TestStringGetSetNxXxExpire(t *testing.T) {
-	r := conn(t)
+	r := NewTest(t)
 
 	{
 		// get and set
@@ -48,7 +48,7 @@ func TestStringGetSetNxXxExpire(t *testing.T) {
 }
 
 func TestStringAppend(t *testing.T) {
-	r := conn(t)
+	r := NewTest(t)
 
 	r.RunTest(e.Exists, "key").Expect(false)
 
@@ -59,7 +59,7 @@ func TestStringAppend(t *testing.T) {
 }
 
 func TestStringBit(t *testing.T) {
-	r := conn(t)
+	r := NewTest(t)
 	r.Equal(1, 1)
 
 	// bitcount
@@ -77,31 +77,31 @@ func TestStringBit(t *testing.T) {
 }
 
 func TestBiTop(t *testing.T) {
-	r := conn(t)
+	r := NewTest(t)
 
 	{
-		setbits(t, r, "bits-1", []int{0, 1, 2, 3}, []int{1, 0, 0, 1}) // bits-1 1001
-		setbits(t, r, "bits-2", []int{0, 1, 2, 3}, []int{1, 0, 1, 1}) // bits-1 1011
+		r.SetBits("bits-1", []int{0, 1, 2, 3}, []int{1, 0, 0, 1}) // bits-1 1001
+		r.SetBits("bits-2", []int{0, 1, 2, 3}, []int{1, 0, 1, 1}) // bits-1 1011
 
 		// 1001 & 1011 = 1001
 		r.RunTest(e.BitOp, redis.BitOpAND, "and-result", "bits-1", "bits-2").Expect(1)
-		getbits(t, r, "and-result", []int{0, 1, 2, 3}, []int{1, 0, 0, 1})
+		r.GetBits("and-result", []int{0, 1, 2, 3}, []int{1, 0, 0, 1})
 
 		// 1001 | 1011 = 1011
 		r.RunTest(e.BitOp, redis.BitOpOR, "or-result", "bits-1", "bits-2").Expect(1)
-		getbits(t, r, "or-result", []int{0, 1, 2, 3}, []int{1, 0, 1, 1})
+		r.GetBits("or-result", []int{0, 1, 2, 3}, []int{1, 0, 1, 1})
 
 		// 1001 ^ 1011 = 0010
 		r.RunTest(e.BitOp, redis.BitOpXOR, "xor-result", "bits-1", "bits-2").Expect(1)
-		getbits(t, r, "xor-result", []int{0, 1, 2, 3}, []int{0, 0, 1, 0})
+		r.GetBits("xor-result", []int{0, 1, 2, 3}, []int{0, 0, 1, 0})
 
 		// ^1001  = 0110
 		r.RunTest(e.BitOp, redis.BitOpNOT, "not-result-1", "bits-1").Expect(1)
-		getbits(t, r, "not-result-1", []int{0, 1, 2, 3}, []int{0, 1, 1, 0})
+		r.GetBits("not-result-1", []int{0, 1, 2, 3}, []int{0, 1, 1, 0})
 
 		// ^1011  = 0100
 		r.RunTest(e.BitOp, redis.BitOpNOT, "not-result-2", "bits-2").Expect(1)
-		getbits(t, r, "not-result-2", []int{0, 1, 2, 3}, []int{0, 1, 0, 0})
+		r.GetBits("not-result-2", []int{0, 1, 2, 3}, []int{0, 1, 0, 0})
 	}
 
 	{
@@ -113,7 +113,7 @@ func TestBiTop(t *testing.T) {
 }
 
 func TestStringBitField(t *testing.T) {
-	r := conn(t)
+	r := NewTest(t)
 
 	datatype := redis.SignedInt(4) // -8 ~ 7
 
@@ -131,7 +131,7 @@ func TestStringBitField(t *testing.T) {
 }
 
 func TestStringDecrIncr(t *testing.T) {
-	r := conn(t)
+	r := NewTest(t)
 
 	// exist key
 	r.RunTest(e.Set, "k1", "10").Expect(true)
@@ -169,7 +169,7 @@ func TestStringDecrIncr(t *testing.T) {
 }
 
 func TestStringRange(t *testing.T) {
-	r := conn(t)
+	r := NewTest(t)
 
 	// set
 	r.RunTest(e.Set, "k", "hello, my friend").Expect(true)
@@ -193,7 +193,7 @@ func TestStringRange(t *testing.T) {
 }
 
 func TestStringGetSet(t *testing.T) {
-	r := conn(t)
+	r := NewTest(t)
 
 	r.RunTest(e.GetSet, "a", "b").ExpectNull()
 
@@ -207,7 +207,7 @@ func TestStringGetSet(t *testing.T) {
 }
 
 func TestMultiGetSet(t *testing.T) {
-	r := conn(t)
+	r := NewTest(t)
 
 	// mset
 	r.Nil(e.MSet("a", "av"))

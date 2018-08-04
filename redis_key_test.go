@@ -8,7 +8,7 @@ import (
 )
 
 func TestDel(t *testing.T) {
-	r := conn(t)
+	r := NewTest(t)
 
 	r.RunTest(e.Set, "a", "b").Expect(true)
 	r.RunTest(e.Del, "a").Expect(1)
@@ -22,23 +22,23 @@ func TestDel(t *testing.T) {
 }
 
 func TestDumpRestore(t *testing.T) {
-	r := conn(t)
+	r := NewTest(t)
 
 	r.RunTest(e.Set, "a", "hello, dumping world!").Expect(true)
 	r.RunTest(e.Dump, "a").Expect("\x00\x15hello, dumping world!\b\x00j`\u07bd\x84>wu")
 	r.RunTest(e.Dump, "b").ExpectNull()
 
-	r.RunTest(e.Restore, "a-2", 0, "\x00\x15hello, dumping world!\b\x00j`\u07bd\x84>wu", false).ExpectSuccess()
+	r.RunTest(e.Restore, "a-2", zeroTimeDuration, "\x00\x15hello, dumping world!\b\x00j`\u07bd\x84>wu", false).ExpectSuccess()
 	r.RunTest(e.Get, "a-2").Expect("hello, dumping world!")
 
-	r.RunTest(e.Restore, "a-2", 0, "\x00\x15hello, dumping world!\b\x00j`\u07bd\x84>wu", false).ExpectError("BUSYKEY Target key name already exists.")
-	r.RunTest(e.Restore, "a-2", 0, "\x00\x15hello, dumping world!\b\x00j`\u07bd\x84>wu", true).ExpectSuccess()
+	r.RunTest(e.Restore, "a-2", zeroTimeDuration, "\x00\x15hello, dumping world!\b\x00j`\u07bd\x84>wu", false).ExpectError("BUSYKEY Target key name already exists.")
+	r.RunTest(e.Restore, "a-2", zeroTimeDuration, "\x00\x15hello, dumping world!\b\x00j`\u07bd\x84>wu", true).ExpectSuccess()
 
-	r.RunTest(e.Restore, "a-3", 0, "invalid dump data", false).ExpectError("ERR DUMP payload version or checksum are wrong")
+	r.RunTest(e.Restore, "a-3", zeroTimeDuration, "invalid dump data", false).ExpectError("ERR DUMP payload version or checksum are wrong")
 }
 
 func TestExist(t *testing.T) {
-	r := conn(t)
+	r := NewTest(t)
 
 	r.RunTest(e.Set, "a", "b").Expect(true)
 	r.RunTest(e.Exists, "a").Expect(true)
@@ -47,7 +47,7 @@ func TestExist(t *testing.T) {
 func TestExpireTTL(t *testing.T) {
 	//t.Parallel() // TODO
 
-	r := conn(t)
+	r := NewTest(t)
 
 	r.RunTest(e.Set, "a", "b").Expect(true)
 	r.RunTest(e.TTL, "a").Expect(nil)
@@ -65,7 +65,7 @@ func TestExpireTTL(t *testing.T) {
 }
 
 func TestKeys(t *testing.T) {
-	r := conn(t)
+	r := NewTest(t)
 
 	r.Nil(e.MSet("one", "1", "two", "2", "three", "3", "four", "4"))
 
@@ -76,7 +76,7 @@ func TestKeys(t *testing.T) {
 }
 
 func TestMove(t *testing.T) {
-	r := conn(t)
+	r := NewTest(t)
 
 	// 清空下面会用到的数据库 0 1
 	r.Nil(e.Select(0))
@@ -119,7 +119,7 @@ func TestMove(t *testing.T) {
 }
 
 func TestObject(t *testing.T) {
-	r := conn(t)
+	r := NewTest(t)
 
 	r.RunTest(e.Set, "a", "b").Expect(true)
 	o := e.Object("a")
@@ -139,7 +139,7 @@ func TestObject(t *testing.T) {
 }
 
 func TestPersist(t *testing.T) {
-	r := conn(t)
+	r := NewTest(t)
 
 	r.RunTest(e.Set, "a", "b").Expect(true)
 	r.RunTest(e.Expire, "a", time.Second*10).True(true)
@@ -149,7 +149,7 @@ func TestPersist(t *testing.T) {
 }
 
 func TestRandomKey(t *testing.T) {
-	r := conn(t)
+	r := NewTest(t)
 
 	r.RunTest(e.MSet, "fruit", "apple", "drink", "beer", "food", "cookies").ExpectSuccess()
 	r.RunTest(e.RandomKey).ExpectBelong("fruit", "drink", "food")
@@ -162,7 +162,7 @@ func TestRandomKey(t *testing.T) {
 }
 
 func TestRenameRenameNx(t *testing.T) {
-	r := conn(t)
+	r := NewTest(t)
 
 	// rename
 	{
@@ -195,7 +195,7 @@ func TestRenameRenameNx(t *testing.T) {
 }
 
 func TestType(t *testing.T) {
-	r := conn(t)
+	r := NewTest(t)
 
 	r.RunTest(e.Set, "a", "1").Expect(true)
 	r.RunTest(e.Type, "a").Expect(redis.KeyTypeString)
@@ -207,7 +207,7 @@ func TestType(t *testing.T) {
 }
 
 func TestScan(t *testing.T) {
-	r := conn(t)
+	r := NewTest(t)
 
 	// all
 	r.RunTest(e.Set, "a", "1").Expect(true)
