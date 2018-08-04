@@ -23,7 +23,7 @@ func (r *Redis) Auth(password string) error {
 	return r.run("AUTH", password).err
 }
 
-// ECHO message
+// Echo message
 //
 //   可用版本： >= 1.0.0
 //   时间复杂度： O(1)
@@ -42,9 +42,9 @@ func (r *Redis) Echo(message string) (NullString, error) {
 //   时间复杂度：O(1)
 //
 //   使用客户端向 Redis 服务器发送一个 PING ，如果服务器运作正常的话，会返回一个 PONG 。
-
+//
 //   通常用于测试与服务器的连接是否仍然生效，或者用于测量延迟值。
-
+//
 //   返回值：
 //     如果连接正常就返回一个 PONG ，否则返回一个连接错误。
 func (r *Redis) Ping() (NullString, error) {
