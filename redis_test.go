@@ -9,8 +9,8 @@ import (
 )
 
 type testRedis struct {
-	*redis.Redis
-	*testing.T
+	redis *redis.Redis
+	t     *testing.T
 	*assert.Assertions
 
 	err      error
@@ -165,8 +165,10 @@ func (r *testRedis) RunTest(fun interface{}, args ...interface{}) *testRedis {
 		for _, v := range s {
 			r.results = append(r.results, v)
 		}
+	case func(index int) error:
+		r.err = f(args[0].(int))
 	default:
-		panic("un support function")
+		panic(fmt.Sprintf("un support function: %#v", f))
 	}
 
 	return r
@@ -288,16 +290,17 @@ func (r *testRedis) equalInts(ints []int, expected ...int) {
 	}
 }
 
-func conn(t *testing.T) (*testRedis, *assert.Assertions) {
+func conn(t *testing.T) *testRedis {
 	as := assert.New(t)
 
-	r, err := redis.Dial("127.0.0.1:6379")
+	var err error
+	e, err = redis.Dial("127.0.0.1:6379")
 	as.Nil(err)
-	as.NotNil(r)
+	as.NotNil(e)
 
-	as.Nil(r.FlushDB())
+	as.Nil(e.FlushDB())
 
-	return &testRedis{Redis: r, T: t, Assertions: as}, as
+	return &testRedis{redis: e, t: t, Assertions: as}
 }
 
 func setbits(t *testing.T, r *testRedis, key string, index, result []int) {
@@ -309,8 +312,8 @@ func setbits(t *testing.T, r *testRedis, key string, index, result []int) {
 		if result[k] == 1 {
 			c = true
 		}
-		//r.RunTest(r.SetBit, index[k], c).Expect(1)
-		_, err := r.SetBit(key, index[k], c)
+		//r.RunTest(e.SetBit, index[k], c).Expect(1)
+		_, err := r.redis.SetBit(key, index[k], c)
 		as.Nil(err)
 	}
 	getbits(t, r, key, index, result)
@@ -321,7 +324,7 @@ func getbits(t *testing.T, r *testRedis, key string, index, result []int) {
 	as.Equal(len(index), len(result))
 
 	for k := range index {
-		r.RunTest(r.GetBit, key, index[k]).Expect(result[k])
+		r.RunTest(e.GetBit, key, index[k]).Expect(result[k])
 	}
 }
 
