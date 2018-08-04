@@ -3,6 +3,7 @@ package redis
 import (
 	"bytes"
 	"fmt"
+	"strconv"
 )
 
 // Reply ...
@@ -65,6 +66,59 @@ func (p *Reply) fixBool() (bool, error) {
 		return p.integer == 1, nil
 	}
 	return false, p.err
+}
+
+func (p *Reply) fixNullStringSlice() ([]NullString, error) {
+	if p.err != nil {
+		return nil, p.err
+	}
+
+	var ns []NullString
+	for _, v := range p.replys {
+		if v.err != nil {
+			return nil, v.err // TODO 这里真的有error吗
+		}
+		n, _ := v.string()
+		ns = append(ns, n)
+	}
+	return ns, nil
+}
+
+func (p *Reply) fixStringSlice() ([]string, error) {
+	if p.err != nil {
+		return nil, p.err
+	}
+
+	var s []string
+	for _, v := range p.replys {
+		if v.err != nil {
+			return nil, v.err // TODO 真的有吗
+		}
+		s = append(s, v.str)
+	}
+	return s, nil
+}
+
+func (p *Reply) fixMap() (map[string]string, error) {
+	if p.err != nil {
+		return nil, p.err
+	}
+
+	var s = make(map[string]string)
+	for i := 0; i < len(p.replys); i += 2 {
+		if p.replys[i].err != nil {
+			return nil, p.replys[i].err // TODO 真的有吗
+		}
+		s[p.replys[i].str] = p.replys[i+1].str
+	}
+	return s, nil
+}
+
+func (p *Reply) fixFloat() (float64, error) {
+	if p.err != nil {
+		return 0, p.err
+	}
+	return strconv.ParseFloat(p.str, 64)
 }
 
 func errToReply(err error) *Reply {

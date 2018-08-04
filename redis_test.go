@@ -11,7 +11,10 @@ import (
 	"github.com/Chyroc/redis"
 )
 
-var zeroTimeDuration = time.Duration(0)
+var (
+	zeroTimeDuration = time.Duration(0)
+	zeroMap          = map[string]string{}
+)
 
 func NewTest(t *testing.T) *testRedis {
 	as := assert.New(t)
@@ -23,7 +26,7 @@ func NewTest(t *testing.T) *testRedis {
 
 	as.Nil(e.FlushDB())
 
-	return &testRedis{redis: e, t: t, Assertions: as}
+	return &testRedis{redis: e, t: t, Assertions: as, mapp: make(map[string]string)}
 }
 
 type testRedis struct {
@@ -38,6 +41,7 @@ type testRedis struct {
 	null     bool
 	duration *time.Duration
 	results  []interface{}
+	mapp     map[string]string
 }
 
 func (r *testRedis) execTestFunction(fun interface{}, args ...interface{}) {
@@ -142,6 +146,8 @@ func (r *testRedis) execTestFunction(fun interface{}, args ...interface{}) {
 			}
 		case reflect.Slice:
 			r.results = toInterfaceSlice(ithCallOutType, ithCallRealOut)
+		case reflect.Map:
+			r.mapp = ithCallRealOut.Interface().(map[string]string)
 		case reflect.Ptr:
 			if !ithCallRealOut.IsNil() {
 				t := ithCallRealOut.Elem().Interface().(time.Duration)
@@ -161,6 +167,10 @@ func (r *testRedis) RunTest(fun interface{}, args ...interface{}) *testRedis {
 
 func (r *testRedis) Expect(expected ...interface{}) *testRedis {
 	r.Nil(r.err)
+
+	if len(expected) == 0 {
+		r.Fail("expect at least 1 argument")
+	}
 
 	if len(r.results) > 0 {
 		r.Len(r.results, len(expected))
@@ -187,6 +197,8 @@ func (r *testRedis) Expect(expected ...interface{}) *testRedis {
 		r.Equal(e, r.str)
 	case bool:
 		r.Equal(e, r.boo)
+	case map[string]string:
+		r.Equal(e, r.mapp)
 	case *time.Duration:
 		r.Equal(e, r.duration)
 	case time.Duration:
@@ -247,9 +259,7 @@ func (r *testRedis) ExpectBelong(s ...string) {
 
 func (r *testRedis) ExpectContains(s ...string) {
 	r.Nil(r.err)
-	if !stringContains(interfacesToStringSlice(r.results, 0), s) {
-		r.Fail(fmt.Sprintf("expected %#v contain: %#v", r.results, s))
-	}
+	stringContains(r.t, interfacesToStringSlice(r.results, 0), s)
 }
 
 func (r *testRedis) SetBits(key string, index, result []int) {
