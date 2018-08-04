@@ -76,7 +76,7 @@ func (r *Redis) BitOp(op BitOp, destkey string, keys ...string) (int, error) {
 		return r.run("BITOP", "NOT", destkey, keys[0]).int()
 	}
 
-	return 0, fmt.Errorf("invalid operation, should be one of: or, and, xor and not")
+	return 0, ErrInvalidBitOp
 }
 
 // BitField key [GET type offset] [SET type offset value] [INCRBY type offset increment] [OVERFLOW WRAP|SAT|FAIL]

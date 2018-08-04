@@ -11,19 +11,7 @@ func (r Redis) write(p []byte) error {
 	return err
 }
 
-/*
-
-以下是这个协议的一般形式：
-*<参数数量> CR LF
-$<参数 1 的字节数量> CR LF
-<参数 1 的数据> CR LF
-...
-$<参数 N 的字节数量> CR LF
-<参数 N 的数据> CR LF
-*/
-
 func (r Redis) cmd(args ...string) error {
-
 	if len(args) == 0 {
 		return ErrEmptyCommand
 	}
@@ -32,17 +20,17 @@ func (r Redis) cmd(args ...string) error {
 
 	buf.WriteString("*")
 	buf.WriteString(strconv.Itoa(len(args)))
-	buf.Write(CRLF)
+	buf.Write(crlf)
 
 	for _, arg := range args {
 		p := []byte(arg)
 
 		buf.WriteString("$")
 		buf.WriteString(strconv.Itoa(len(p)))
-		buf.Write(CRLF)
+		buf.Write(crlf)
 
 		buf.Write(p)
-		buf.Write(CRLF)
+		buf.Write(crlf)
 	}
 
 	return r.write(buf.Bytes())

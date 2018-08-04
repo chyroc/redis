@@ -6,6 +6,13 @@ import (
 	"strconv"
 )
 
+const (
+	lf byte = 10 // \n
+	cr byte = 13 // \r
+)
+
+var crlf = []byte{cr, lf}
+
 func (r *Redis) read() (*Reply, error) {
 	respType, err := r.reader.ReadByte()
 	if err != nil {
@@ -14,25 +21,25 @@ func (r *Redis) read() (*Reply, error) {
 
 	switch respType {
 	case '+':
-		resp, err := readUntilCRCL(r.reader)
+		resp, err := readUntilCRLF(r.reader)
 		if err != nil {
 			return nil, err
 		}
 		return bytesToReply(resp), nil
 	case '-':
-		message, err := readUntilCRCL(r.reader)
+		message, err := readUntilCRLF(r.reader)
 		if err != nil {
 			return nil, err
 		}
 		return nil, errors.New(string(message)) // TODO 错误类型
 	case ':':
-		length, err := readIntBeforeCRCL(r.reader)
+		length, err := readIntBeforeCRLF(r.reader)
 		if err != nil {
 			return nil, err
 		}
 		return &Reply{integer: length}, nil
 	case '$':
-		length, err := readIntBeforeCRCL(r.reader)
+		length, err := readIntBeforeCRLF(r.reader)
 		if err != nil {
 			return nil, err
 		}
@@ -46,12 +53,12 @@ func (r *Redis) read() (*Reply, error) {
 			return nil, err
 		}
 
-		readUntilCRCL(r.reader)
+		readUntilCRLF(r.reader)
 
 		return bytesToReply(bs), nil
 	case '*':
 		// multi bulk reply
-		count, err := readIntBeforeCRCL(r.reader)
+		count, err := readIntBeforeCRLF(r.reader)
 		if err != nil {
 			return nil, err
 		}
@@ -71,22 +78,22 @@ func (r *Redis) read() (*Reply, error) {
 	return nil, ErrUnSupportRespType
 }
 
-func readUntilCRCL(reader *bufio.Reader) ([]byte, error) {
-	bs, err := reader.ReadBytes(LF)
+func readUntilCRLF(reader *bufio.Reader) ([]byte, error) {
+	bs, err := reader.ReadBytes(lf)
 	if err != nil {
 		return bs, err
 	}
 
 	l := len(bs)
-	if l >= 2 && bs[l-2] == CR {
+	if l >= 2 && bs[l-2] == cr {
 		return bs[:l-2], nil
 	}
 
 	return bs, nil
 }
 
-func readIntBeforeCRCL(reader *bufio.Reader) (int64, error) {
-	length, err := readUntilCRCL(reader)
+func readIntBeforeCRLF(reader *bufio.Reader) (int64, error) {
+	length, err := readUntilCRLF(reader)
 	if err != nil {
 		return 0, err
 	}
