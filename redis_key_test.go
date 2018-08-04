@@ -143,7 +143,7 @@ func TestPersist(t *testing.T) {
 
 	r.RunTest(e.Set, "a", "b").Expect(true)
 	r.RunTest(e.Expire, "a", time.Second*10).True(true)
-	r.RunTest(e.TTL, "a").Expect(time.Second * 10)
+	r.RunTest(e.TTL, "a").ExpectLess(time.Second * 10)
 	r.RunTest(e.Persist, "a").Expect(true)
 	r.RunTest(e.Persist, "a").Expect(false)
 }
