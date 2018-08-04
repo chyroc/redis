@@ -10,6 +10,7 @@ services:
   - redis-server
 
 before_install:
+  - sudo redis-server /etc/redis/redis.conf -port 7777
   - go get -u github.com/haya14busa/goverage
 
 script:
