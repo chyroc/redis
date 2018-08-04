@@ -12,5 +12,5 @@ func TestConnection(t *testing.T) {
 	r.RunTest(r.Set, "a", "b").Expect(true)
 	r.RunTest(r.Get, "a").Expect("b")
 	as.Nil(r.Select(2))
-	r.RunTest(r.Get, "a").ExpectError(redis.ErrNull.Error())
+	r.RunTest(r.Get, "a").Expect(redis.NullString{})
 }

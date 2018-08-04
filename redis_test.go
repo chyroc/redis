@@ -13,12 +13,13 @@ type testRedis struct {
 	*testing.T
 	*assert.Assertions
 
-	err     error
-	number  float64
-	str     string
-	boo     bool
-	null    bool
-	results []interface{}
+	err      error
+	number   float64
+	str      string
+	boo      bool
+	null     bool
+	duration *time.Duration
+	results  []interface{}
 }
 
 func (r *testRedis) RunTest(fun interface{}, args ...interface{}) *testRedis {
@@ -27,6 +28,7 @@ func (r *testRedis) RunTest(fun interface{}, args ...interface{}) *testRedis {
 	r.str = ""
 	r.boo = false
 	r.null = false
+	r.duration = nil
 	r.results = nil
 
 	switch f := fun.(type) {
@@ -123,6 +125,46 @@ func (r *testRedis) RunTest(fun interface{}, args ...interface{}) *testRedis {
 		r.number = float64(integer)
 	case func() (string, error):
 		r.str, r.err = f()
+	case func(key string) (*time.Duration, error):
+		r.duration, r.err = f(args[0].(string))
+	case func(key string, t time.Duration) (bool, error):
+		r.boo, r.err = f(args[0].(string), args[1].(time.Duration))
+	case func() (redis.NullString, error):
+		var ns redis.NullString
+		ns, r.err = f()
+		r.str = ns.String
+		r.null = !ns.Valid
+	case func(key, value string, kvs ...string) error:
+		r.err = f(args[0].(string), args[1].(string), interfacesToStringSlice(args, 2)...)
+	case func(key, newkey string) error:
+		r.err = f(args[0].(string), args[1].(string))
+	case func(key, newkey string) (bool, error):
+		r.boo, r.err = f(args[0].(string), args[1].(string))
+	case func(key string, ttl time.Duration, serializedValue string, Replace bool) error:
+		var t time.Duration
+		switch args[1].(type) {
+		case int:
+			t = time.Duration(t)
+		case time.Duration:
+			t = args[1].(time.Duration)
+		}
+		r.err = f(args[0].(string), t, args[2].(string), args[3].(bool))
+	case func(key string) (redis.KeyType, error):
+		var k redis.KeyType
+		k, r.err = f(args[0].(string))
+		r.str = string(k)
+	case func(options ...redis.ScanOption) ([]string, error):
+		if len(args) > 0 {
+			f(args[0].(redis.ScanOption))
+		} else {
+			f()
+		}
+	case func() ([]string, error):
+		var s []string
+		s, r.err = f()
+		for _, v := range s {
+			r.results = append(r.results, v)
+		}
 	default:
 		panic("un support function")
 	}
@@ -139,7 +181,7 @@ func (r *testRedis) equal(expected, actual interface{}) {
 	}
 }
 
-func (r *testRedis) Expect(expected ...interface{}) {
+func (r *testRedis) Expect(expected ...interface{}) *testRedis {
 	r.Nil(r.err)
 
 	if len(r.results) > 0 {
@@ -155,7 +197,7 @@ func (r *testRedis) Expect(expected ...interface{}) {
 
 		r.Equal(expected, r.results)
 
-		return
+		return r
 	}
 
 	switch e := expected[0].(type) {
@@ -167,7 +209,26 @@ func (r *testRedis) Expect(expected ...interface{}) {
 		r.Equal(e, r.str)
 	case bool:
 		r.Equal(e, r.boo)
+	case *time.Duration:
+		r.Equal(e, r.duration)
+	case time.Duration:
+		r.Equal(e, *r.duration)
+	case redis.KeyType:
+		r.Equal(string(e), r.str)
+	case redis.NullString:
+		r.Equal(e.String, r.str)
+		r.Equal(e.Valid, !r.null)
+	case nil:
+		r.Nil(r.duration)
+	default:
+		panic(fmt.Sprintf("invalid data type: %#v", e))
 	}
+
+	return r
+}
+
+func (r *testRedis) ExpectSuccess() {
+	r.Nil(r.err)
 }
 
 func (r *testRedis) ExpectNull() {
@@ -177,12 +238,40 @@ func (r *testRedis) ExpectNull() {
 }
 
 func (r *testRedis) ExpectError(s string) {
-	r.Error(fmt.Errorf(s))
+	r.NotNil(r.err)
+	r.Equal(s, r.err.Error())
 }
 
 func (r *testRedis) ExpectBigger(i int) {
 	r.Nil(r.err)
 	r.True(r.number > float64(i))
+}
+
+func (r *testRedis) ExpectLess(i interface{}) {
+	r.Nil(r.err)
+	switch v := i.(type) {
+	case int:
+		r.True(r.number <= float64(v))
+	case time.Duration:
+		r.True(*r.duration <= v)
+	}
+}
+
+func (r *testRedis) ExpectBelong(s ...string) {
+	r.Nil(r.err)
+	for _, v := range s {
+		if v == r.str {
+			return
+		}
+	}
+	r.Fail(fmt.Sprintf("expected %#v contain: %v", s, r.str))
+}
+
+func (r *testRedis) ExpectContains(s ...string) {
+	r.Nil(r.err)
+	if !stringContains(interfacesToStringSlice(r.results, 0), s) {
+		r.Fail(fmt.Sprintf("expected %#v contain: %#v", r.results, s))
+	}
 }
 
 func (r *testRedis) equalInt64s(ints []int64, expected ...int) {
@@ -257,4 +346,18 @@ func interfacesToStringSlice(args []interface{}, startIndex int) []string {
 		str = append(str, v.(string))
 	}
 	return str
+}
+
+// every ele in b in a slice
+func stringContains(a, b []string) bool {
+	m := make(map[string]bool)
+	for _, v := range a {
+		m[v] = true
+	}
+	for _, v := range b {
+		if !m[v] {
+			return false
+		}
+	}
+	return true
 }

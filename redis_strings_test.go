@@ -24,7 +24,7 @@ func TestStringGetSetNxXxExpire(t *testing.T) {
 
 		time.Sleep(time.Second*2 + time.Millisecond*100)
 
-		r.RunTest(r.Get, "key-with-expire-time").ExpectError(redis.ErrNull.Error())
+		r.RunTest(r.Get, "key-with-expire-time").Expect(redis.NullString{})
 	}
 
 	{
@@ -148,10 +148,10 @@ func TestStringDecrIncr(t *testing.T) {
 
 	// invalid data type
 	r.RunTest(r.Set, "k3", "string").Expect(true)
-	r.RunTest(r.Decr, "k3").ExpectError("ERR value is not an number or out of range")
-	r.RunTest(r.DecrBy, "k3", 10).ExpectError("ERR value is not an number or out of range")
-	r.RunTest(r.Incr, "k3").ExpectError("ERR value is not an number or out of range")
-	r.RunTest(r.IncrBy, "k3", 10).ExpectError("ERR value is not an number or out of range")
+	r.RunTest(r.Decr, "k3").ExpectError("ERR value is not an integer or out of range")
+	r.RunTest(r.DecrBy, "k3", 10).ExpectError("ERR value is not an integer or out of range")
+	r.RunTest(r.Incr, "k3").ExpectError("ERR value is not an integer or out of range")
+	r.RunTest(r.IncrBy, "k3", 10).ExpectError("ERR value is not an integer or out of range")
 
 	r.RunTest(r.Set, "k3", "1.1").Expect(true)
 	r.RunTest(r.IncrByFloat, "k3", 2.3).Expect(3.4)
@@ -221,7 +221,7 @@ func TestMultiGetSet(t *testing.T) {
 
 	// msetnx
 	r.RunTest(r.MSetNX, "a", "1", "not-exist-1", "1").Expect(false)
-	r.RunTest(r.Get, "not-exist-1").ExpectError(redis.ErrNull.Error())
+	r.RunTest(r.Get, "not-exist-1").Expect(redis.NullString{})
 	r.RunTest(r.MSetNX, "not-exist-1", "1", "not-exist-2", "1").Expect(true)
-	r.RunTest(r.Get, "not-exist-1").ExpectError(redis.ErrNull.Error())
+	r.RunTest(r.Get, "not-exist-1").Expect("1")
 }

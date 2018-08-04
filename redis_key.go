@@ -3,6 +3,7 @@ package redis
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -89,8 +90,10 @@ func (r *Redis) Exists(key string) (bool, error) {
 //   返回值：
 //     设置成功返回 1 。
 //     当 key 不存在或者不能为 key 设置生存时间时(比如在低于 2.1.3 版本的 Redis 中你尝试更新 key 的生存时间)，返回 0 。
-func (r *Redis) Expire(key string, seconds int) (bool, error) {
-	return r.run("EXPIRE", key, strconv.Itoa(seconds)).fixBool()
+//
+//   注意：这里没有实现EXPIRE命令
+func (r *Redis) Expire(key string, t time.Duration) (bool, error) {
+	return r.run("PEXPIRE", key, durationToMillisecond(t)).fixBool()
 }
 
 // ExpireAt key timestamp
@@ -105,30 +108,10 @@ func (r *Redis) Expire(key string, seconds int) (bool, error) {
 //   返回值：
 //     如果生存时间设置成功，返回 1 。
 //     当 key 不存在或没办法设置生存时间，返回 0 。
+//
+//   注意：这里没有实现EXPIREAT方法
 func (r *Redis) ExpireAt(key string, t time.Time) (bool, error) {
-	return r.run("EXPIREAT", key, strconv.Itoa(int(t.Unix()))).fixBool()
-}
-
-// TTL key
-//
-//   可用版本：>= 1.0.0
-//   时间复杂度：O(1)
-//
-//   以秒为单位，返回给定 key 的剩余生存时间(TTL, time to live)。
-//
-//   返回值：
-//     当 key 不存在时，返回 -2 。
-//     当 key 存在但没有设置剩余生存时间时，返回 -1 。
-//     否则，以秒为单位，返回 key 的剩余生存时间。
-func (r *Redis) TTL(key string) (int, error) {
-	c, err := r.run("TTL", key).int()
-	if err != nil {
-		return 0, err
-	}
-	if c == -2 {
-		return 0, ErrKeyNotExist
-	}
-	return c, nil
+	return r.run("PEXPIREAT", key, strconv.Itoa(int(t.UnixNano()/int64(time.Millisecond)))).fixBool()
 }
 
 // Keys pattern
@@ -261,6 +244,200 @@ func (r *Redis) Move(key string, db int) (bool, error) {
 //   返回值：
 //     REFCOUNT 和 IDLETIME 返回数字。
 //     ENCODING 返回相应的编码类型。
-func (r *Redis) Object(key string) *KeyObject {
-	return &KeyObject{r, key}
+func (r *Redis) Object(key string) *Object {
+	return &Object{r, key}
+}
+
+// Persist key
+//
+//   可用版本： >= 2.2.0
+//   时间复杂度： O(1)
+//
+//   移除给定 key 的生存时间，将这个 key 从『易失的』(带生存时间 key )转换成『持久的』(一个不带生存时间、永不过期的 key )。
+//
+//   返回值：
+//     当生存时间移除成功时，返回 1 .
+//     如果 key 不存在或 key 没有设置生存时间，返回 0 。
+func (r *Redis) Persist(key string) (bool, error) {
+	return r.run("PERSIST", key).fixBool()
+}
+
+// RandomKey ...
+//
+//   可用版本：>= 1.0.0
+//   时间复杂度： O(1)
+//
+//   从当前数据库中随机返回(不删除)一个 key 。
+//
+//   返回值：
+//     当数据库不为空时，返回一个 key 。
+//     当数据库为空时，返回 nil 。
+func (r *Redis) RandomKey() (NullString, error) {
+	return r.run("RANDOMKEY").string()
+}
+
+// Rename key newkey
+//
+//   可用版本： >= 1.0.0
+//   时间复杂度： O(1)
+//
+//   将 key 改名为 newkey 。
+//
+//   当 key 和 newkey 相同，或者 key 不存在时，返回一个错误。
+//
+//   当 newkey 已经存在时， RENAME 命令将覆盖旧值。
+//
+//   返回值：
+//     改名成功时提示 OK ，失败时候返回一个错误。
+func (r *Redis) Rename(key, newkey string) error {
+	return r.run("RENAME", key, newkey).err
+}
+
+// RenameNX key newkey
+//
+//   可用版本： >= 1.0.0
+//   时间复杂度： O(1)
+//
+//   当且仅当 newkey 不存在时，将 key 改名为 newkey 。
+//
+//   当 key 不存在时，返回一个错误。
+//
+//   返回值：
+//     修改成功时，返回 1 。
+//     如果 newkey 已经存在，返回 0 。
+func (r *Redis) RenameNX(key, newkey string) (bool, error) {
+	return r.run("RENAMENX", key, newkey).fixBool()
+}
+
+// Restore key ttl serialized-value [REPLACE]
+//
+//   可用版本： >= 2.6.0
+//   时间复杂度：
+//     查找给定键的复杂度为 O(1) ，对键进行反序列化的复杂度为 O(N*M) ，其中 N 是构成 key 的 Redis 对象的数量，而 M 则是这些对象的平均大小。
+//     有序集合(sorted set)的反序列化复杂度为 O(N*M*log(N)) ，因为有序集合每次插入的复杂度为 O(log(N)) 。
+//     如果反序列化的对象是比较小的字符串，那么复杂度为 O(1) 。
+//
+//   反序列化给定的序列化值，并将它和给定的 key 关联。
+//
+//   参数 ttl 以毫秒为单位为 key 设置生存时间；如果 ttl 为 0 ，那么不设置生存时间。
+//
+//   RESTORE 在执行反序列化之前会先对序列化值的 RDB 版本和数据校验和进行检查，如果 RDB 版本不相同或者数据不完整的话，那么 RESTORE 会拒绝进行反序列化，并返回一个错误。
+//
+//   如果键 key 已经存在， 并且给定了 REPLACE 选项， 那么使用反序列化得出的值来代替键 key 原有的值； 相反地， 如果键 key 已经存在， 但是没有给定 REPLACE 选项， 那么命令返回一个错误。
+//
+//   返回值：
+//     如果反序列化成功那么返回 OK ，否则返回一个错误。
+func (r *Redis) Restore(key string, ttl time.Duration, serializedValue string, Replace bool) error {
+	args := []string{"RESTORE", key, durationToMillisecond(ttl), serializedValue}
+	if Replace {
+		args = append(args, "REPLACE")
+	}
+	return r.run(args...).err
+}
+
+// Sort key [BY pattern] [LIMIT offset count] [GET pattern [GET pattern ...]] [ASC | DESC] [ALPHA] [STORE destination]
+//
+//   返回或保存给定列表、集合、有序集合 key 中经过排序的元素。
+//
+//   排序默认以数字作为对象，值被解释为双精度浮点数，然后进行比较。
+func (r *Redis) Sort() error {
+	panic("not impl")
+}
+
+// TTL key
+//
+//   可用版本：>= 1.0.0
+//   时间复杂度：O(1)
+//
+//   以秒为单位，返回给定 key 的剩余生存时间(TTL, time to live)。
+//
+//   返回值：
+//     当 key 不存在时，返回 -2 。
+//     当 key 存在但没有设置剩余生存时间时，返回 -1 。
+//     否则，以秒为单位，返回 key 的剩余生存时间。
+//
+//   注意：这里没有实现TTL命令
+func (r *Redis) TTL(key string) (*time.Duration, error) {
+	c, err := r.run("PTTL", key).int()
+	if err != nil {
+		return nil, err
+	}
+	if c == -2 {
+		return nil, ErrKeyNotExist
+	} else if c == -1 {
+		return nil, nil
+	}
+
+	t := time.Duration(c * int(time.Millisecond))
+	return &t, nil
+}
+
+// Type key
+//
+//   可用版本： >= 1.0.0
+//   时间复杂度： O(1)
+//
+//   返回 key 所储存的值的类型。
+//
+//   返回值：
+//     none (key不存在)
+//     string (字符串)
+//     list (列表)
+//     set (集合)
+//     zset (有序集)
+//     hash (哈希表)
+func (r *Redis) Type(key string) (KeyType, error) {
+	p := r.run("TYPE", key)
+	if p.err != nil {
+		return "", p.err
+	}
+	switch strings.ToLower(p.str) {
+	case "none":
+		return KeyTypeNone, nil
+	case "string":
+		return KeyTypeString, nil
+	case "list":
+		return KeyTypeList, nil
+	case "set":
+		return KeyTypeSet, nil
+	case "zset":
+		return KeyTypeZSet, nil
+	case "hash":
+		return KeyTypeHash, nil
+	default:
+		return "", fmt.Errorf("invalid keytype %s", p.str)
+	}
+}
+
+// Scan cursor [MATCH pattern] [COUNT count]
+//
+//   SCAN 命令及其相关的 SSCAN 命令、 HSCAN 命令和 ZSCAN 命令都用于增量地迭代（incrementally iterate）一集元素（a collection of elements）：
+//
+//     SCAN 命令用于迭代当前数据库中的数据库键。
+//     SSCAN 命令用于迭代集合键中的元素。
+//     HSCAN 命令用于迭代哈希键中的键值对。
+//     ZSCAN 命令用于迭代有序集合中的元素（包括元素成员和元素分值）。
+//
+//   以上列出的四个命令都支持增量式迭代， 它们每次执行都只会返回少量元素， 所以这些命令可以用于生产环境， 而不会出现像 KEYS 命令、 SMEMBERS 命令带来的问题 —— 当 KEYS 命令被用于处理一个大的数据库时， 又或者 SMEMBERS 命令被用于处理一个大的集合键时， 它们可能会阻塞服务器达数秒之久。
+//
+//   不过， 增量式迭代命令也不是没有缺点的： 举个例子， 使用 SMEMBERS 命令可以返回集合键当前包含的所有元素， 但是对于 SCAN 这类增量式迭代命令来说， 因为在对键进行增量式迭代的过程中， 键可能会被修改， 所以增量式迭代命令只能对被返回的元素提供有限的保证 （offer limited guarantees about the returned elements）。
+//
+//   因为 SCAN 、 SSCAN 、 HSCAN 和 ZSCAN 四个命令的工作方式都非常相似， 所以这个文档会一并介绍这四个命令， 但是要记住：
+//
+//     SSCAN 命令、 HSCAN 命令和 ZSCAN 命令的第一个参数总是一个数据库键。
+//     而 SCAN 命令则不需要在第一个参数提供任何数据库键 —— 因为它迭代的是当前数据库中的所有数据库键。
+func (r *Redis) Scan(options ...ScanOption) *Scan {
+	if len(options) > 1 {
+		return &Scan{err: fmt.Errorf("must have 0 or 1 option")}
+	}
+	var args []string
+	if len(options) > 0 {
+		if options[0].Match != "" {
+			args = append(args, "MATCH", options[0].Match)
+		}
+		if options[0].Count != 0 {
+			args = append(args, "COUNT", strconv.Itoa(options[0].Count))
+		}
+	}
+	return &Scan{redis: r, args: args, cursor: -1}
 }

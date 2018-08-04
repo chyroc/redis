@@ -46,3 +46,16 @@ type NullString struct {
 	String string
 	Valid  bool // Valid is true if String is not NULL
 }
+
+// KeyType ...
+type KeyType string
+
+// KeyType ...
+const (
+	KeyTypeNone   KeyType = "none"   // key不存在
+	KeyTypeString KeyType = "string" // 字符串
+	KeyTypeList   KeyType = "list"   // 列表
+	KeyTypeSet    KeyType = "set"    // 集合
+	KeyTypeZSet   KeyType = "zset"   // 有序集
+	KeyTypeHash   KeyType = "hash"   // 哈希表
+)

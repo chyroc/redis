@@ -17,4 +17,5 @@ var (
 	ErrEmptyCommand      = errors.New("empty command")
 	ErrNull              = errors.New("empty string")
 	ErrKeyNotExist       = errors.New("key not exist")
+	ErrIteratorEnd       = errors.New("iterator end")
 )
