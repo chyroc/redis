@@ -141,14 +141,7 @@ func (r *testRedis) RunTest(fun interface{}, args ...interface{}) *testRedis {
 	case func(key, newkey string) (bool, error):
 		r.boo, r.err = f(args[0].(string), args[1].(string))
 	case func(key string, ttl time.Duration, serializedValue string, Replace bool) error:
-		var t time.Duration
-		switch args[1].(type) {
-		case int:
-			t = time.Duration(t)
-		case time.Duration:
-			t = args[1].(time.Duration)
-		}
-		r.err = f(args[0].(string), t, args[2].(string), args[3].(bool))
+		r.err = f(args[0].(string), interfaceToDutation(args[1]), args[2].(string), args[3].(bool))
 	case func(key string) (redis.KeyType, error):
 		var k redis.KeyType
 		k, r.err = f(args[0].(string))
@@ -167,6 +160,12 @@ func (r *testRedis) RunTest(fun interface{}, args ...interface{}) *testRedis {
 		}
 	case func(index int) error:
 		r.err = f(args[0].(int))
+	case func(host string, port int, key string, destinationDB int, timeout time.Duration, options ...redis.MigrateOption) error:
+		if len(args) > 5 {
+			r.err = f(args[0].(string), args[1].(int), args[2].(string), args[3].(int), interfaceToDutation(args[4]), args[5].(redis.MigrateOption))
+		} else {
+			r.err = f(args[0].(string), args[1].(int), args[2].(string), args[3].(int), interfaceToDutation(args[4]))
+		}
 	default:
 		panic(fmt.Sprintf("un support function: %#v", f))
 	}
@@ -363,4 +362,17 @@ func stringContains(a, b []string) bool {
 		}
 	}
 	return true
+}
+
+func interfaceToDutation(s interface{}) time.Duration {
+	var t time.Duration
+	switch s.(type) {
+	case int:
+		t = time.Duration(t)
+	case time.Duration:
+		t = s.(time.Duration)
+	default:
+		panic(fmt.Sprintf("%v connot convert to time.Duration", s))
+	}
+	return t
 }
