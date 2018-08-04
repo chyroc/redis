@@ -200,7 +200,7 @@ func TestType(t *testing.T) {
 	r.RunTest(e.Set, "a", "1").Expect(true)
 	r.RunTest(e.Type, "a").Expect(redis.KeyTypeString)
 
-	// TODO LPUSH book_list "programming in scala" list
+	// TODO LPush book_list "programming in scala" list
 
 	r.RunTest(e.SAdd, "b", "1").Expect(1)
 	r.RunTest(e.Type, "b").Expect(redis.KeyTypeSet)
