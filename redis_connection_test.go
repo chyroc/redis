@@ -27,7 +27,7 @@ func TestMultiRdisInstance(t *testing.T) {
 	}
 
 	r.RunTest(e.Set, "greeting", "Hello from 6379 instance").Expect(true)
-	r.RunTest(e.Migrate, "127.0.0.1", 7777, "greeting", 0, 0).ExpectSuccess()
+	r.RunTest(e.Migrate, "127.0.0.1", 7777, "greeting", 0, zeroTimeDuration).ExpectSuccess()
 	r.RunTest(e.Exists, "greeting").Expect(false)
 
 	e2, err := redis.Dial("127.0.0.1:7777")

@@ -327,6 +327,17 @@ func interfaceSliceToReflectValue(typ reflect.Type, args []interface{}, i int) r
 		case reflect.Int:
 			var ints []int
 			return reflect.ValueOf(&ints).Elem()
+		case reflect.Struct:
+			switch typ.Elem().Name() {
+			case "MigrateOption":
+				var ints []redis.MigrateOption
+				return reflect.ValueOf(&ints).Elem()
+			case "SetOption":
+				var ints []redis.SetOption
+				return reflect.ValueOf(&ints).Elem()
+			default:
+				panic(fmt.Sprintf("unsupport %v\n", typ.Elem().Name()))
+			}
 		default:
 			if typ.Elem().ConvertibleTo(reflect.TypeOf(redis.SetOption{})) {
 				var str []redis.SetOption
@@ -353,6 +364,12 @@ func interfaceSliceToReflectValue(typ reflect.Type, args []interface{}, i int) r
 		var v = reflect.ValueOf(&[]redis.SetOption{}).Elem()
 		for _, s := range args[i:] {
 			v = reflect.Append(v, reflect.ValueOf(s.(redis.SetOption)))
+		}
+		return v
+	case redis.MigrateOption:
+		var v = reflect.ValueOf(&[]redis.MigrateOption{}).Elem()
+		for _, s := range args[i:] {
+			v = reflect.Append(v, reflect.ValueOf(s.(redis.MigrateOption)))
 		}
 		return v
 	default:
