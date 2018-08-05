@@ -91,7 +91,7 @@ func TestListRPopLPush(t *testing.T) {
 
 	// source == dest
 	{
-		r.Nil(e.FlushDB())
+		r.as.Nil(e.FlushDB())
 
 		// init data
 		r.RunTest(e.RPush, "a", "1").Expect(1)
@@ -107,7 +107,7 @@ func TestListRPopLPush(t *testing.T) {
 	}
 
 	{
-		r.Nil(e.FlushDB())
+		r.as.Nil(e.FlushDB())
 		// init data
 		r.RunTest(e.RPush, "a", "1").Expect(1)
 		r.RunTest(e.RPush, "a", "2").Expect(2)
@@ -182,7 +182,7 @@ func TestListTrim(t *testing.T) {
 	r := NewTest(t)
 
 	{
-		r.Nil(e.FlushDB())
+		r.as.Nil(e.FlushDB())
 		r.RunTest(e.RPush, "a", "1").Expect(1)
 		r.RunTest(e.RPush, "a", "2").Expect(2)
 		r.RunTest(e.RPush, "a", "3").Expect(3)
@@ -204,7 +204,7 @@ func TestListTrim(t *testing.T) {
 	}
 
 	{
-		r.Nil(e.FlushDB())
+		r.as.Nil(e.FlushDB())
 		r.RunTest(e.RPush, "a", "1").Expect(1)
 		r.RunTest(e.RPush, "a", "2").Expect(2)
 		r.RunTest(e.RPush, "a", "3").Expect(3)

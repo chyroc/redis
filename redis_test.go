@@ -26,13 +26,13 @@ func NewTest(t *testing.T) *testRedis {
 
 	as.Nil(e.FlushDB())
 
-	return &testRedis{redis: e, t: t, Assertions: as, mapp: make(map[string]string)}
+	return &testRedis{redis: e, t: t, as: as, mapp: make(map[string]string)}
 }
 
 type testRedis struct {
 	redis *redis.Redis
 	t     *testing.T
-	*assert.Assertions
+	as    *assert.Assertions
 
 	err      error
 	number   float64
@@ -47,15 +47,15 @@ type testRedis struct {
 func (r *testRedis) run(fun interface{}, args ...interface{}) {
 	ft := reflect.TypeOf(fun)
 	fv := reflect.ValueOf(fun)
-	r.Equal(reflect.Func, ft.Kind())
-	r.Equal(reflect.Func, fv.Kind())
+	r.as.Equal(reflect.Func, ft.Kind())
+	r.as.Equal(reflect.Func, fv.Kind())
 
 	atLeastCallInNumber := ft.NumIn()
 	if ft.IsVariadic() {
 		atLeastCallInNumber--
 	}
 	if atLeastCallInNumber > len(args) {
-		r.Fail(fmt.Sprintf("expect at least %d arguments , but got %d: %#v", atLeastCallInNumber, len(args), args))
+		r.as.Fail(fmt.Sprintf("expect at least %d arguments , but got %d: %#v", atLeastCallInNumber, len(args), args))
 	}
 
 	var in []reflect.Value
@@ -160,20 +160,20 @@ func (r *testRedis) run(fun interface{}, args ...interface{}) {
 }
 
 func (r *testRedis) RunTest(fun interface{}, args ...interface{}) *testRedis {
-	r = &testRedis{redis: r.redis, t: r.t, Assertions: r.Assertions}
+	r = &testRedis{redis: r.redis, t: r.t, as: r.as}
 	r.run(fun, args...)
 	return r
 }
 
 func (r *testRedis) Expect(expected ...interface{}) *testRedis {
-	r.Nil(r.err)
+	r.as.Nil(r.err)
 
 	if len(expected) == 0 {
-		r.Fail("expect at least 1 argument")
+		r.as.Fail("expect at least 1 argument")
 	}
 
 	if len(r.results) > 0 {
-		r.Len(r.results, len(expected))
+		r.as.Len(r.results, len(expected))
 		for k, v := range r.results {
 			switch v.(type) {
 			case int64:
@@ -183,33 +183,33 @@ func (r *testRedis) Expect(expected ...interface{}) *testRedis {
 			}
 		}
 
-		r.Equal(expected, r.results)
+		r.as.Equal(expected, r.results)
 
 		return r
 	}
 
 	switch e := expected[0].(type) {
 	case int:
-		r.Equal(float64(e), r.number)
+		r.as.Equal(float64(e), r.number)
 	case float64:
-		r.Equal(e, r.number)
+		r.as.Equal(e, r.number)
 	case string:
-		r.Equal(e, r.str)
+		r.as.Equal(e, r.str)
 	case bool:
-		r.Equal(e, r.boo)
+		r.as.Equal(e, r.boo)
 	case map[string]string:
-		r.Equal(e, r.mapp)
+		r.as.Equal(e, r.mapp)
 	case *time.Duration:
-		r.Equal(e, r.duration)
+		r.as.Equal(e, r.duration)
 	case time.Duration:
-		r.Equal(e, *r.duration)
+		r.as.Equal(e, *r.duration)
 	case redis.KeyType:
-		r.Equal(string(e), r.str)
+		r.as.Equal(string(e), r.str)
 	case redis.NullString:
-		r.Equal(e.String, r.str)
-		r.Equal(e.Valid, !r.null)
+		r.as.Equal(e.String, r.str)
+		r.as.Equal(e.Valid, !r.null)
 	case nil:
-		r.Nil(r.duration)
+		r.as.Nil(r.duration)
 	default:
 		panic(fmt.Sprintf("invalid data type: %#v", e))
 	}
@@ -218,52 +218,77 @@ func (r *testRedis) Expect(expected ...interface{}) *testRedis {
 }
 
 func (r *testRedis) ExpectSuccess() {
-	r.Nil(r.err)
+	r.as.Nil(r.err)
 }
 
 func (r *testRedis) ExpectNull() {
-	r.Nil(r.err)
-	r.True(r.null)
-	r.Empty(r.str)
+	r.as.Nil(r.err)
+	r.as.True(r.null)
+	r.as.Empty(r.str)
 }
 
 func (r *testRedis) ExpectError(s string) {
-	r.NotNil(r.err)
-	r.Equal(s, r.err.Error())
+	r.as.NotNil(r.err)
+	r.as.Equal(s, r.err.Error())
 }
 
 func (r *testRedis) ExpectBigger(i int) {
-	r.Nil(r.err)
-	r.True(r.number > float64(i))
+	r.as.Nil(r.err)
+	r.as.True(r.number > float64(i))
 }
 
 func (r *testRedis) ExpectLess(i interface{}) {
-	r.Nil(r.err)
+	r.as.Nil(r.err)
 	switch v := i.(type) {
 	case int:
-		r.True(r.number <= float64(v))
+		r.as.True(r.number <= float64(v))
 	case time.Duration:
-		r.True(*r.duration <= v)
+		r.as.True(*r.duration <= v)
 	}
 }
 
 func (r *testRedis) ExpectBelong(s ...string) {
-	r.Nil(r.err)
+	r.as.Nil(r.err)
 	for _, v := range s {
 		if v == r.str {
 			return
 		}
 	}
-	r.Fail(fmt.Sprintf("expected %#v contain: %v", s, r.str))
+	r.as.Fail(fmt.Sprintf("expected %#v contain: %v", s, r.str))
 }
 
 func (r *testRedis) ExpectContains(s ...string) {
-	r.Nil(r.err)
+	r.as.Nil(r.err)
 	stringContains(r.t, interfacesToStringSlice(r.results, 0), s)
 }
 
+func (r *testRedis) ExpectContainsBy(s ...string) {
+	r.as.Nil(r.err)
+	stringContains(r.t, s, interfacesToStringSlice(r.results, 0))
+}
+
+func (r *testRedis) ExpectSlice(s ...string) {
+	r.as.Nil(r.err)
+
+	m := make(map[string]int)
+	for _, v := range r.results {
+		m[v.(string)]++
+	}
+	for _, v := range s {
+		if m[v] <= 0 {
+			r.as.Fail(fmt.Sprintf("%#v != %#v", r.results, s))
+		}
+		m[v]--
+	}
+	for _, v := range m {
+		if v > 0 {
+			r.as.Fail(fmt.Sprintf("%#v != %#v", r.results, s))
+		}
+	}
+}
+
 func (r *testRedis) SetBits(key string, index, result []int) {
-	r.Equal(len(index), len(result))
+	r.as.Equal(len(index), len(result))
 	for k := range index {
 		c := false
 		if result[k] == 1 {
@@ -275,7 +300,7 @@ func (r *testRedis) SetBits(key string, index, result []int) {
 }
 
 func (r *testRedis) GetBits(key string, index, result []int) {
-	r.Equal(len(index), len(result))
+	r.as.Equal(len(index), len(result))
 	for k := range index {
 		r.RunTest(e.GetBit, key, index[k]).Expect(result[k])
 	}
@@ -299,6 +324,9 @@ func interfaceSliceToReflectValue(typ reflect.Type, args []interface{}, i int) r
 		case reflect.String:
 			var str []string
 			return reflect.ValueOf(&str).Elem()
+		case reflect.Int:
+			var ints []int
+			return reflect.ValueOf(&ints).Elem()
 		default:
 			if typ.Elem().ConvertibleTo(reflect.TypeOf(redis.SetOption{})) {
 				var str []redis.SetOption
@@ -378,8 +406,23 @@ func (r *testRedis) TestTimeout(f func(), timeout time.Duration) {
 	case <-done:
 		return
 	case <-time.After(timeout):
-		r.Fail(fmt.Sprintf("timeout"))
+		r.as.Fail(fmt.Sprintf("timeout"))
 	}
 
-	r.Fail("unkone error")
+	r.as.Fail("unkone error")
+}
+
+// every ele in b in a slice
+func stringContains(t *testing.T, a, b []string) {
+	as := assert.New(t)
+
+	m := make(map[string]bool)
+	for _, v := range a {
+		m[v] = true
+	}
+	for _, v := range b {
+		if !m[v] {
+			as.Fail(fmt.Sprintf("%#v should contain %#v", b, a))
+		}
+	}
 }

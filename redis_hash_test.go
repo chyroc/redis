@@ -84,7 +84,7 @@ func TestHash(t *testing.T) {
 	r.RunTest(e.HStrLen, "not-exist", "c").Expect(3)               // 200
 	r.RunTest(e.HStrLen, "not-exist", "not-exist-field").Expect(2) // -1
 
-	r.Nil(e.FlushDB())
+	r.as.Nil(e.FlushDB())
 
 	// hash scan
 	r.RunTest(e.HSet, "addr", "a", "1").Expect(true)
@@ -100,13 +100,13 @@ func TestHash(t *testing.T) {
 	var kk []int
 	var ff []string
 	var vv []string
-	r.Nil(e.HScan("addr").Each(func(k int, field, value string) error {
+	r.as.Nil(e.HScan("addr").Each(func(k int, field, value string) error {
 		kk = append(kk, k)
 		ff = append(ff, field)
 		vv = append(vv, value)
 		return nil
 	}))
-	r.Equal([]int{0, 1, 2, 3, 4, 5}, kk)
+	r.as.Equal([]int{0, 1, 2, 3, 4, 5}, kk)
 	stringContains(t, []string{"d", "d1w", "d2w", "a", "b", "c"}, ff)
-	r.Equal([]string{"1", "1", "1", "1", "1", "1"}, vv)
+	r.as.Equal([]string{"1", "1", "1", "1", "1", "1"}, vv)
 }

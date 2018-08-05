@@ -67,7 +67,7 @@ func TestExpireTTL(t *testing.T) {
 func TestKeys(t *testing.T) {
 	r := NewTest(t)
 
-	r.Nil(e.MSet("one", "1", "two", "2", "three", "3", "four", "4"))
+	r.as.Nil(e.MSet("one", "1", "two", "2", "three", "3", "four", "4"))
 
 	r.RunTest(e.Keys, "*o*").ExpectContains("four", "one", "two")
 	r.RunTest(e.Keys, "t??").ExpectContains("two")
@@ -79,13 +79,13 @@ func TestMove(t *testing.T) {
 	r := NewTest(t)
 
 	// 清空下面会用到的数据库 0 1
-	r.Nil(e.Select(0))
-	r.Nil(e.FlushDB())
-	r.Nil(e.Select(1))
-	r.Nil(e.FlushDB())
+	r.as.Nil(e.Select(0))
+	r.as.Nil(e.FlushDB())
+	r.as.Nil(e.Select(1))
+	r.as.Nil(e.FlushDB())
 
 	// key exist
-	r.Nil(e.Select(0))
+	r.as.Nil(e.Select(0))
 
 	r.RunTest(e.Set, "a", "b").Expect(true)
 	r.RunTest(e.Exists, "a").Expect(true)
@@ -93,28 +93,28 @@ func TestMove(t *testing.T) {
 	r.RunTest(e.Move, "a", 1).Expect(true)
 	r.RunTest(e.Exists, "a").Expect(false)
 
-	r.Nil(e.Select(1))
+	r.as.Nil(e.Select(1))
 	r.RunTest(e.Exists, "a").Expect(true)
 
 	// key not exist
-	r.Nil(e.Select(0))
+	r.as.Nil(e.Select(0))
 
 	r.RunTest(e.Exists, "b").Expect(false)
 	r.RunTest(e.Move, "b", 1).Expect(false)
 
-	r.Nil(e.Select(1))
+	r.as.Nil(e.Select(1))
 	r.RunTest(e.Exists, "b").Expect(false)
 
 	// 当源数据库和目标数据库有相同的 key 时
-	r.Nil(e.Select(0))
+	r.as.Nil(e.Select(0))
 	r.RunTest(e.Set, "c", "db 0").Expect(true)
-	r.Nil(e.Select(1))
+	r.as.Nil(e.Select(1))
 	r.RunTest(e.Set, "c", "db 1").Expect(true)
-	r.Nil(e.Select(0))
+	r.as.Nil(e.Select(0))
 	r.RunTest(e.Move, "c", 1).Expect(false)
 
 	r.RunTest(e.Get, "c").Expect("db 0")
-	r.Nil(e.Select(1))
+	r.as.Nil(e.Select(1))
 	r.RunTest(e.Get, "c").Expect("db 1")
 }
 
@@ -142,7 +142,7 @@ func TestPersist(t *testing.T) {
 	r := NewTest(t)
 
 	r.RunTest(e.Set, "a", "b").Expect(true)
-	r.RunTest(e.Expire, "a", time.Second*10).True(true)
+	r.RunTest(e.Expire, "a", time.Second*10).as.True(true)
 	r.RunTest(e.TTL, "a").ExpectLess(time.Second * 10)
 	r.RunTest(e.Persist, "a").Expect(true)
 	r.RunTest(e.Persist, "a").Expect(false)
@@ -157,7 +157,7 @@ func TestRandomKey(t *testing.T) {
 	r.RunTest(e.RandomKey).ExpectBelong("fruit", "drink", "food")
 	r.RunTest(e.Keys, "*") // TODO list contain list
 
-	r.Nil(e.FlushDB())
+	r.as.Nil(e.FlushDB())
 	r.RunTest(e.RandomKey).ExpectNull()
 }
 
@@ -183,7 +183,7 @@ func TestRenameRenameNx(t *testing.T) {
 		r.RunTest(e.Get, "d").Expect("1")
 	}
 
-	r.Nil(e.FlushDB())
+	r.as.Nil(e.FlushDB())
 
 	// renamenx
 	{
@@ -232,5 +232,5 @@ func TestScan(t *testing.T) {
 		return nil
 	}))
 	stringContains(r.t, vv, []string{"a", "b", "c", "d"})
-	r.Equal([]int{0, 1, 2, 3, 4, 5, 6}, kk)
+	r.as.Equal([]int{0, 1, 2, 3, 4, 5, 6}, kk)
 }

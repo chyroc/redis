@@ -4,8 +4,8 @@ import (
 	"bufio"
 	"fmt"
 	"net"
-	"time"
 	"sync"
+	"time"
 )
 
 // Redis ...
@@ -26,7 +26,7 @@ func Dial(addr string) (*Redis, error) {
 	r := new(Redis)
 	r.conn = conn
 	r.reader = bufio.NewReader(conn)
-	r.Mutex=new(sync.Mutex)
+	r.Mutex = new(sync.Mutex)
 
 	return r, nil
 }

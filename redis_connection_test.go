@@ -3,8 +3,8 @@ package redis_test
 import (
 	"github.com/Chyroc/redis"
 	"os"
-	"testing"
 	"sync"
+	"testing"
 	"time"
 )
 
@@ -31,10 +31,10 @@ func TestMultiRdisInstance(t *testing.T) {
 	r.RunTest(e.Exists, "greeting").Expect(false)
 
 	e2, err := redis.Dial("127.0.0.1:7777")
-	r.Nil(err)
+	r.as.Nil(err)
 	x, err := e2.Get("greeting")
-	r.Nil(err)
-	r.Equal(redis.NullString{String: "Hello from 6379 instance", Valid: true}, x)
+	r.as.Nil(err)
+	r.as.Equal(redis.NullString{String: "Hello from 6379 instance", Valid: true}, x)
 }
 
 func TestLock(t *testing.T) {

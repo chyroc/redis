@@ -39,3 +39,15 @@ func (r *stringAppend) adds(s ...string) *stringAppend {
 func (r *stringAppend) build() []string {
 	return r.s
 }
+
+func buildSlice1(s string, ss []string) []string {
+	return append([]string{s}, ss...)
+}
+
+func buildSlice2(a, b string, ss []string) []string {
+	return append([]string{a, b}, ss...)
+}
+
+func buildSlice3(a, b, c string, ss []string) []string {
+	return append([]string{a, b, c}, ss...)
+}

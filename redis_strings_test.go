@@ -60,7 +60,7 @@ func TestStringAppend(t *testing.T) {
 
 func TestStringBit(t *testing.T) {
 	r := NewTest(t)
-	r.Equal(1, 1)
+	r.as.Equal(1, 1)
 
 	// bitcount
 	r.RunTest(e.BitCount, "bits", 0)
@@ -210,8 +210,8 @@ func TestMultiGetSet(t *testing.T) {
 	r := NewTest(t)
 
 	// mset
-	r.Nil(e.MSet("a", "av"))
-	r.Nil(e.MSet("b", "bv", "c", "cv"))
+	r.as.Nil(e.MSet("a", "av"))
+	r.as.Nil(e.MSet("b", "bv", "c", "cv"))
 	r.RunTest(e.MSet, "1", "2", "3").ExpectError("key value pair, but got 3 arguments")
 
 	// mget
