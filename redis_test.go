@@ -363,3 +363,23 @@ func toInterfaceSlice(typ reflect.Type, value reflect.Value) []interface{} {
 
 	return slice
 }
+
+func (r *testRedis) TestTimeout(f func(), timeout time.Duration) {
+	done := make(chan bool)
+	go func() {
+		defer func() {
+			done <- true
+		}()
+
+		f()
+	}()
+
+	select {
+	case <-done:
+		return
+	case <-time.After(timeout):
+		r.Fail(fmt.Sprintf("timeout"))
+	}
+
+	r.Fail("unkone error")
+}

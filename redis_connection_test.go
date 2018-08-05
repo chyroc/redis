@@ -4,6 +4,8 @@ import (
 	"github.com/Chyroc/redis"
 	"os"
 	"testing"
+	"sync"
+	"time"
 )
 
 var e *redis.Redis
@@ -33,4 +35,19 @@ func TestMultiRdisInstance(t *testing.T) {
 	x, err := e2.Get("greeting")
 	r.Nil(err)
 	r.Equal(redis.NullString{String: "Hello from 6379 instance", Valid: true}, x)
+}
+
+func TestLock(t *testing.T) {
+	r := NewTest(t)
+	r.TestTimeout(func() {
+		wg := new(sync.WaitGroup)
+		for i := 0; i < 20; i++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				r.RunTest(e.Set, "k2", "2").Expect(true)
+			}()
+		}
+		wg.Wait()
+	}, time.Second*2)
 }

@@ -11,7 +11,7 @@ golang redis client / go语言实现的redis客户端
 * [x] key
 * [x] string
 * [x] hash
-* [ ] list
+* [x] list
 * [ ] set
 * [ ] sorted set
 * [ ] hyper log log

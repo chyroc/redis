@@ -36,7 +36,11 @@ func (r Redis) cmd(args ...string) error {
 	return r.write(buf.Bytes())
 }
 
+// 需要加锁
 func (r Redis) run(args ...string) *Reply {
+	r.Lock()
+	defer r.Unlock()
+
 	if err := r.cmd(args...); err != nil {
 		fmt.Printf("send %#v [error:%s]\n", args, err)
 		return errToReply(err)

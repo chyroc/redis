@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"net"
 	"time"
+	"sync"
 )
 
 // Redis ...
 type Redis struct {
+	*sync.Mutex
 	conn   net.Conn
 	reader *bufio.Reader
 }
@@ -24,6 +26,7 @@ func Dial(addr string) (*Redis, error) {
 	r := new(Redis)
 	r.conn = conn
 	r.reader = bufio.NewReader(conn)
+	r.Mutex=new(sync.Mutex)
 
 	return r, nil
 }
