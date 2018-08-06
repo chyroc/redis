@@ -55,3 +55,20 @@ func (r Redis) run(args ...string) *Reply {
 	fmt.Printf("send %#v | got %v\n", args, reply)
 	return reply
 }
+
+// 需要加锁
+func (r Redis) runWithLock(args ...string) *Reply {
+	if err := r.cmd(args...); err != nil {
+		fmt.Printf("send %#v [error:%s]\n", args, err)
+		return errToReply(err)
+	}
+
+	reply, err := r.read()
+	if err != nil {
+		fmt.Printf("send %#v [error:%s]\n", args, err)
+		return errToReply(err)
+	}
+
+	fmt.Printf("send %#v | got %v\n", args, reply)
+	return reply
+}

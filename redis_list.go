@@ -247,7 +247,7 @@ func (r *Redis) LRem(key string, count int, value string) (int, error) {
 //   返回值：
 //     操作成功返回 ok ，否则返回错误信息。
 func (r *Redis) LSet(key string, index int, value string) error {
-	return r.run("LSET", key, strconv.Itoa(index), value).err
+	return r.run("LSET", key, strconv.Itoa(index), value).errNotFromReply
 }
 
 // LTRIM key start stop

@@ -85,14 +85,14 @@ func (b *BitField) Run() ([]int64, error) {
 		return nil, b.err
 	}
 	p := b.r.run(append([]string{"BITFIELD", b.key}, b.actions...)...)
-	if p.err != nil {
-		return nil, p.err
+	if p.errNotFromReply != nil {
+		return nil, p.errNotFromReply
 	}
 
 	var is []int64
 	for _, v := range p.replys {
-		if v.err != nil {
-			return nil, v.err // TODO 检查这是不是真的有err
+		if v.errNotFromReply != nil {
+			return nil, v.errNotFromReply // TODO 检查这是不是真的有err
 		}
 		is = append(is, v.integer)
 	}

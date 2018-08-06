@@ -8,7 +8,6 @@ import (
 	"time"
 )
 
-var e *redis.Redis
 
 func TestConnection(t *testing.T) {
 	r := NewTest(t)

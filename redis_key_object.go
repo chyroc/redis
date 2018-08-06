@@ -14,8 +14,8 @@ func (r *Object) RefCount() (int, error) {
 // Encoding <key> 返回给定 key 锁储存的值所使用的内部表示(representation)。
 func (r *Object) Encoding() (string, error) {
 	p := r.redis.run("OBJECT", "ENCODING", r.key)
-	if p.err != nil {
-		return "", p.err
+	if p.errNotFromReply != nil {
+		return "", p.errNotFromReply
 	}
 	return p.str, nil
 }

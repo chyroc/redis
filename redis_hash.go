@@ -173,7 +173,7 @@ func (r *Redis) HMSet(key, field, value string, kvs ...string) error {
 		return fmt.Errorf("key value pair, but got %d arguments", len(kvs)+3)
 	}
 
-	return r.run(append([]string{"HMSET", key, field, value}, kvs...)...).err
+	return r.run(append([]string{"HMSET", key, field, value}, kvs...)...).errNotFromReply
 }
 
 // HSet key field value

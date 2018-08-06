@@ -61,8 +61,8 @@ func (r *ZScan) Next() ([]*SortedSet, error) {
 	}
 
 	p := r.redis.run(append([]string{"ZSCAN", r.key, strconv.Itoa(r.cursor)}, r.args...)...)
-	if p.err != nil {
-		return nil, p.err
+	if p.errNotFromReply != nil {
+		return nil, p.errNotFromReply
 	}
 
 	if len(p.replys) != 2 {
@@ -70,8 +70,8 @@ func (r *ZScan) Next() ([]*SortedSet, error) {
 	}
 
 	// cursor
-	if p.replys[0].err != nil {
-		return nil, p.replys[0].err
+	if p.replys[0].errNotFromReply != nil {
+		return nil, p.replys[0].errNotFromReply
 	}
 	next, err := strconv.Atoi(p.replys[0].str)
 	if err != nil {

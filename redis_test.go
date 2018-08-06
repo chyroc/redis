@@ -9,24 +9,28 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/Chyroc/redis"
+	"math/rand"
 )
 
 var (
+	e                *redis.Redis
 	zeroTimeDuration = time.Duration(0)
 	zeroMap          = map[string]string{}
 )
 
-func NewTest(t *testing.T) *testRedis {
+func NewRedis(t *testing.T) *redis.Redis {
 	as := assert.New(t)
-
-	var err error
-	e, err = redis.Dial("127.0.0.1:6379")
+	e, err := redis.Dial("127.0.0.1:6379")
 	as.Nil(err)
 	as.NotNil(e)
+	return e
+}
 
+func NewTest(t *testing.T) *testRedis {
+	as := assert.New(t)
+	e = NewRedis(t)
 	as.Nil(e.FlushDB())
-
-	return &testRedis{redis: e, t: t, as: as, mapp: make(map[string]string)}
+	return &testRedis{redis: e, t: t, as: as, map_string_string: make(map[string]string), map_string_int: make(map[string]int)}
 }
 
 type testRedis struct {
@@ -34,14 +38,15 @@ type testRedis struct {
 	t     *testing.T
 	as    *assert.Assertions
 
-	err      error
-	number   float64
-	str      string
-	boo      bool
-	null     bool
-	duration *time.Duration
-	results  []interface{}
-	mapp     map[string]string
+	err               error
+	number            float64
+	str               string
+	boo               bool
+	null              bool
+	duration          *time.Duration
+	results           []interface{}
+	map_string_string map[string]string
+	map_string_int    map[string]int
 }
 
 func (r *testRedis) run(fun interface{}, args ...interface{}) {
@@ -147,7 +152,14 @@ func (r *testRedis) run(fun interface{}, args ...interface{}) {
 		case reflect.Slice:
 			r.results = toInterfaceSlice(ithCallOutType, ithCallRealOut)
 		case reflect.Map:
-			r.mapp = ithCallRealOut.Interface().(map[string]string)
+			switch x := ithCallRealOut.Interface().(type) {
+			case map[string]string:
+				r.map_string_string = x
+			case map[string]int:
+				r.map_string_int = x
+			default:
+				panic(fmt.Sprintf("invalid map type: %#v\n", x))
+			}
 		case reflect.Ptr:
 			if !ithCallRealOut.IsNil() {
 				t := ithCallRealOut.Elem().Interface().(time.Duration)
@@ -184,7 +196,6 @@ func (r *testRedis) Expect(expected ...interface{}) *testRedis {
 		}
 
 		r.as.Equal(expected, r.results)
-
 		return r
 	}
 
@@ -198,7 +209,9 @@ func (r *testRedis) Expect(expected ...interface{}) *testRedis {
 	case bool:
 		r.as.Equal(e, r.boo)
 	case map[string]string:
-		r.as.Equal(e, r.mapp)
+		r.as.Equal(e, r.map_string_string)
+	case map[string]int:
+		r.as.Equal(e, r.map_string_int)
 	case *time.Duration:
 		r.as.Equal(e, r.duration)
 	case time.Duration:
@@ -482,4 +495,16 @@ func stringContains(t *testing.T, a, b []string) {
 			as.Fail(fmt.Sprintf("%#v should contain %#v", b, a))
 		}
 	}
+}
+
+func randString(n int) string {
+	var letterRunes = []rune("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+	// RandString rand string
+	rand.Seed(int64(time.Now().Nanosecond()))
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+	}
+	return string(b)
 }

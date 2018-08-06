@@ -20,7 +20,7 @@ import "strconv"
 //   返回值：
 //     密码匹配时返回 OK ，否则返回一个错误。
 func (r *Redis) Auth(password string) error {
-	return r.run("AUTH", password).err
+	return r.run("AUTH", password).errNotFromReply
 }
 
 // Echo message
@@ -63,7 +63,7 @@ func (r *Redis) Ping() (NullString, error) {
 //   返回值：
 //     总是返回 OK (但是不会被打印显示，因为当时 Redis-cli 已经退出)。
 func (r *Redis) Quit() error {
-	return r.run("QUIT").err
+	return r.run("QUIT").errNotFromReply
 }
 
 // Select index
@@ -78,5 +78,5 @@ func (r *Redis) Quit() error {
 //   返回值：
 //     OK
 func (r *Redis) Select(index int) error {
-	return r.run("SELECT", strconv.Itoa(index)).err
+	return r.run("SELECT", strconv.Itoa(index)).errNotFromReply
 }

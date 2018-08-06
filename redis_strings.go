@@ -297,7 +297,7 @@ func (r *Redis) MSet(key, value string, kvs ...string) error {
 		return fmt.Errorf("key value pair, but got %d arguments", len(kvs)+2)
 	}
 
-	return r.run(append([]string{"MSET", key, value}, kvs...)...).err
+	return r.run(append([]string{"MSET", key, value}, kvs...)...).errNotFromReply
 }
 
 // MSetNX key value [key value ...]
@@ -367,8 +367,8 @@ func (r *Redis) Set(key, value string, options ...SetOption) (bool, error) {
 	}
 
 	p := r.run(args...)
-	if p.err != nil {
-		return false, p.err
+	if p.errNotFromReply != nil {
+		return false, p.errNotFromReply
 	}
 
 	return p.str == "OK" && !p.null, nil

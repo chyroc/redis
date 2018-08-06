@@ -57,5 +57,5 @@ func (r *Redis) PFCount(key string, keys ...string) (int, error) {
 //   返回值：
 //     字符串回复：返回 OK 。
 func (r *Redis) PFMerge(destkey, sourcekey string, sourcekeys ...string) error {
-	return r.run(buildSlice3("PFMERGE", destkey, sourcekey, sourcekeys)...).err
+	return r.run(buildSlice3("PFMERGE", destkey, sourcekey, sourcekeys)...).errNotFromReply
 }

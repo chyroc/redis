@@ -184,7 +184,7 @@ func (r *Redis) Migrate(host string, port int, key string, destinationDB int, ti
 			args = append(args, "REPLACE")
 		}
 	}
-	return r.run(args...).err
+	return r.run(args...).errNotFromReply
 }
 
 // Move key db
@@ -278,7 +278,7 @@ func (r *Redis) RandomKey() (NullString, error) {
 //   返回值：
 //     改名成功时提示 OK ，失败时候返回一个错误。
 func (r *Redis) Rename(key, newkey string) error {
-	return r.run("RENAME", key, newkey).err
+	return r.run("RENAME", key, newkey).errNotFromReply
 }
 
 // RenameNX key newkey
@@ -320,7 +320,7 @@ func (r *Redis) Restore(key string, ttl time.Duration, serializedValue string, R
 	if Replace {
 		args = append(args, "REPLACE")
 	}
-	return r.run(args...).err
+	return r.run(args...).errNotFromReply
 }
 
 // Sort key [BY pattern] [LIMIT offset count] [GET pattern [GET pattern ...]] [ASC | DESC] [ALPHA] [STORE destination]
@@ -376,8 +376,8 @@ func (r *Redis) TTL(key string) (*time.Duration, error) {
 //     hash (哈希表)
 func (r *Redis) Type(key string) (KeyType, error) {
 	p := r.run("TYPE", key)
-	if p.err != nil {
-		return "", p.err
+	if p.errNotFromReply != nil {
+		return "", p.errNotFromReply
 	}
 	switch strings.ToLower(p.str) {
 	case "none":

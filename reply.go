@@ -1,58 +1,56 @@
 package redis
 
 import (
-	"bytes"
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 // Reply ...
 type Reply struct {
-	err     error
+	errNotFromReply error // 只有run runWithLock 会在这里带有值，其他情况不用判断
+
 	null    bool
 	str     string
 	integer int64
-
-	replys []*Reply
+	replys  []*Reply
 }
 
-// String ...
+// String just for test
 func (p *Reply) String() string {
-	if p.err != nil {
-		return fmt.Sprintf("Err: %v", p.err)
+	if p.errNotFromReply != nil {
+		return fmt.Sprintf("Err: %v", p.errNotFromReply)
 	}
 	if p.null {
-		return "NULL"
+		return "<nil>"
 	}
 	if p.str != "" {
-		return fmt.Sprintf("String: %v", p.str)
+		return fmt.Sprintf("<String: %v>", p.str)
 	}
 	if p.integer != 0 {
-		return fmt.Sprintf("Integet: %v", p.integer)
+		return fmt.Sprintf("<Int: %v>", p.integer)
 	}
 	if len(p.replys) > 0 {
-		buf := new(bytes.Buffer)
-		buf.WriteString("List:")
+		var s []string
 		for _, v := range p.replys {
-			buf.WriteString("  ")
-			buf.WriteString(v.String())
+			s = append(s, v.String())
 		}
-		return buf.String()
+		return fmt.Sprintf("(List: %s)",strings.Join(s,", "))
 	}
-	return ""
+	return "<empty>"
 }
 
 // Integer ...
 func (p *Reply) int() (int, error) {
-	if p.err != nil {
-		return 0, p.err
+	if p.errNotFromReply != nil {
+		return 0, p.errNotFromReply
 	}
 	return int(p.integer), nil // TODO int64?
 }
 
 func (p *Reply) string() (NullString, error) {
-	if p.err != nil {
-		return NullString{}, p.err
+	if p.errNotFromReply != nil {
+		return NullString{}, p.errNotFromReply
 	}
 	if p.null {
 		return NullString{}, nil
@@ -62,15 +60,15 @@ func (p *Reply) string() (NullString, error) {
 }
 
 func (p *Reply) fixBool() (bool, error) {
-	if p.err == nil {
+	if p.errNotFromReply == nil {
 		return p.integer == 1, nil
 	}
-	return false, p.err
+	return false, p.errNotFromReply
 }
 
 func (p *Reply) fixNilInt() (int, error) {
-	if p.err != nil {
-		return 0, p.err
+	if p.errNotFromReply != nil {
+		return 0, p.errNotFromReply
 	} else if p.null {
 		return 0, ErrKeyNotExist
 	}
@@ -78,21 +76,21 @@ func (p *Reply) fixNilInt() (int, error) {
 }
 
 func (p *Reply) fixFloat64() (float64, error) {
-	if p.err != nil {
-		return 0, p.err
+	if p.errNotFromReply != nil {
+		return 0, p.errNotFromReply
 	}
 	return strconv.ParseFloat(p.str, 10)
 }
 
 func (p *Reply) fixNullStringSlice() ([]NullString, error) {
-	if p.err != nil {
-		return nil, p.err
+	if p.errNotFromReply != nil {
+		return nil, p.errNotFromReply
 	}
 
 	var ns []NullString
 	for _, v := range p.replys {
-		if v.err != nil {
-			return nil, v.err // TODO 这里真的有error吗
+		if v.errNotFromReply != nil {
+			return nil, v.errNotFromReply // TODO 这里真的有error吗
 		}
 		n, _ := v.string()
 		ns = append(ns, n)
@@ -101,14 +99,14 @@ func (p *Reply) fixNullStringSlice() ([]NullString, error) {
 }
 
 func (p *Reply) fixStringSlice() ([]string, error) {
-	if p.err != nil {
-		return nil, p.err
+	if p.errNotFromReply != nil {
+		return nil, p.errNotFromReply
 	}
 
 	var s []string
 	for _, v := range p.replys {
-		if v.err != nil {
-			return nil, v.err // TODO 真的有吗
+		if v.errNotFromReply != nil {
+			return nil, v.errNotFromReply // TODO 真的有吗
 		}
 		s = append(s, v.str)
 	}
@@ -116,17 +114,17 @@ func (p *Reply) fixStringSlice() ([]string, error) {
 }
 
 func (p *Reply) fixMap() (map[string]string, error) {
-	if p.err != nil {
-		return nil, p.err
+	if p.errNotFromReply != nil {
+		return nil, p.errNotFromReply
 	}
 
 	var s = make(map[string]string)
 	for i := 0; i < len(p.replys); i += 2 {
-		if p.replys[i].err != nil {
-			return nil, p.replys[i].err // TODO 真的有吗
+		if p.replys[i].errNotFromReply != nil {
+			return nil, p.replys[i].errNotFromReply // TODO 真的有吗
 		}
-		if p.replys[i+1].err != nil {
-			return nil, p.replys[i+1].err // TODO 真的有吗
+		if p.replys[i+1].errNotFromReply != nil {
+			return nil, p.replys[i+1].errNotFromReply // TODO 真的有吗
 		}
 		s[p.replys[i].str] = p.replys[i+1].str
 	}
@@ -134,13 +132,13 @@ func (p *Reply) fixMap() (map[string]string, error) {
 }
 
 func (p *Reply) fixGeoLocationSlice() ([]*GeoLocation, error) {
-	if p.err != nil {
-		return nil, p.err
+	if p.errNotFromReply != nil {
+		return nil, p.errNotFromReply
 	}
 	var ss []*GeoLocation
 	for _, v := range p.replys {
-		if v.err != nil {
-			return nil, v.err
+		if v.errNotFromReply != nil {
+			return nil, v.errNotFromReply
 		}
 		if len(v.replys) < 2 {
 			return nil, fmt.Errorf("expect 2 string to parse to geo")
@@ -159,13 +157,13 @@ func (p *Reply) fixGeoLocationSlice() ([]*GeoLocation, error) {
 }
 
 func (p *Reply) fixSortedSetSlice() ([]*SortedSet, error) {
-	if p.err != nil {
-		return nil, p.err
+	if p.errNotFromReply != nil {
+		return nil, p.errNotFromReply
 	}
 	var ss []*SortedSet
 	for _, v := range p.replys {
-		if v.err != nil {
-			return nil, v.err
+		if v.errNotFromReply != nil {
+			return nil, v.errNotFromReply
 		}
 		ss = append(ss, &SortedSet{Member: v.str})
 	}
@@ -173,16 +171,16 @@ func (p *Reply) fixSortedSetSlice() ([]*SortedSet, error) {
 }
 
 func (p *Reply) fixSortedSetSliceWithScores() ([]*SortedSet, error) {
-	if p.err != nil {
-		return nil, p.err
+	if p.errNotFromReply != nil {
+		return nil, p.errNotFromReply
 	}
 	var ss []*SortedSet
 	for i := 0; i < len(p.replys); i += 2 {
-		if p.replys[i].err != nil {
-			return nil, p.replys[i].err // TODO 真的有吗
+		if p.replys[i].errNotFromReply != nil {
+			return nil, p.replys[i].errNotFromReply // TODO 真的有吗
 		}
-		if p.replys[i+1].err != nil {
-			return nil, p.replys[i+1].err // TODO 真的有吗
+		if p.replys[i+1].errNotFromReply != nil {
+			return nil, p.replys[i+1].errNotFromReply // TODO 真的有吗
 		}
 		score, err := strconv.Atoi(p.replys[i+1].str)
 		if err != nil {
@@ -195,15 +193,15 @@ func (p *Reply) fixSortedSetSliceWithScores() ([]*SortedSet, error) {
 }
 
 func (p *Reply) fixFloat() (float64, error) {
-	if p.err != nil {
-		return 0, p.err
+	if p.errNotFromReply != nil {
+		return 0, p.errNotFromReply
 	}
 	return strconv.ParseFloat(p.str, 64)
 }
 
 func errToReply(err error) *Reply {
 	if err != nil {
-		return &Reply{err: err}
+		return &Reply{errNotFromReply: err}
 	}
 	return nil
 }

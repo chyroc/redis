@@ -2,5 +2,5 @@ package redis
 
 // FlushDB ...
 func (r *Redis) FlushDB() error {
-	return r.run("FLUSHDB").err
+	return r.run("FLUSHDB").errNotFromReply
 }
