@@ -90,7 +90,7 @@ func (r *testRedis) run(fun interface{}, args ...interface{}) {
 			}
 		case reflect.Struct:
 			switch l := args[i].(type) {
-			case redis.SetOption, redis.MigrateOption, redis.ScanOption, time.Time:
+			case redis.SetOption, redis.MigrateOption, redis.ScanOption, redis.GeoLocation, time.Time:
 				in = append(in, reflect.ValueOf(l))
 			default:
 				panic(fmt.Sprintf("unsupport %v: %#v\n", ithCallInType.Kind(), args[i]))
@@ -342,6 +342,9 @@ func interfaceSliceToReflectValue(typ reflect.Type, args []interface{}, i int) r
 			case "LimitOption":
 				var ints []redis.LimitOption
 				return reflect.ValueOf(&ints).Elem()
+			case "GeoLocation":
+				var ints []redis.GeoLocation
+				return reflect.ValueOf(&ints).Elem()
 			default:
 				panic(fmt.Sprintf("unsupport %v\n", typ.Elem().Name()))
 			}
@@ -430,6 +433,10 @@ func toInterfaceSlice(typ reflect.Type, value reflect.Value) []interface{} {
 			}
 		case "SortedSet":
 			for _, v := range value.Convert(reflect.TypeOf([]*redis.SortedSet{})).Interface().([]*redis.SortedSet) {
+				slice = append(slice, v)
+			}
+		case "GeoLocation":
+			for _, v := range value.Convert(reflect.TypeOf([]*redis.GeoLocation{})).Interface().([]*redis.GeoLocation) {
 				slice = append(slice, v)
 			}
 		default:

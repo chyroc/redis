@@ -65,3 +65,10 @@ type SortedSet struct {
 	Member string
 	Score  int
 }
+
+// GeoLocation ...
+type GeoLocation struct {
+	Longitude float64 // 经度
+	Latitude  float64 // 纬度
+	Member    string
+}

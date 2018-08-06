@@ -133,6 +133,31 @@ func (p *Reply) fixMap() (map[string]string, error) {
 	return s, nil
 }
 
+func (p *Reply) fixGeoLocationSlice() ([]*GeoLocation, error) {
+	if p.err != nil {
+		return nil, p.err
+	}
+	var ss []*GeoLocation
+	for _, v := range p.replys {
+		if v.err != nil {
+			return nil, v.err
+		}
+		if len(v.replys) < 2 {
+			return nil, fmt.Errorf("expect 2 string to parse to geo")
+		}
+		longitude, err := stringToFloat64(v.replys[0].str)
+		if err != nil {
+			return nil, err
+		}
+		latitude, err := stringToFloat64(v.replys[1].str)
+		if err != nil {
+			return nil, err
+		}
+		ss = append(ss, &GeoLocation{Longitude: longitude, Latitude: latitude})
+	}
+	return ss, nil
+}
+
 func (p *Reply) fixSortedSetSlice() ([]*SortedSet, error) {
 	if p.err != nil {
 		return nil, p.err
