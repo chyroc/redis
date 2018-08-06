@@ -13,10 +13,19 @@ var e *redis.Redis
 func TestConnection(t *testing.T) {
 	r := NewTest(t)
 
+	// select
 	r.RunTest(e.Set, "a", "b").Expect(true)
 	r.RunTest(e.Get, "a").Expect("b")
 	r.RunTest(e.Select, 2).ExpectSuccess()
 	r.RunTest(e.Get, "a").Expect(redis.NullString{})
+
+	// ping echo
+	r.RunTest(e.Ping).Expect("PONG")
+	r.RunTest(e.Echo, "message").Expect("message")
+
+	// quit
+	r.RunTest(e.Quit).ExpectSuccess()
+	r.RunTest(e.Get, "a").ExpectError("EOF")
 }
 
 func TestMultiRdisInstance(t *testing.T) {

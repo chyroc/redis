@@ -16,6 +16,10 @@ func durationToMillisecond(t time.Duration) string {
 	return strconv.Itoa(int(t / time.Millisecond))
 }
 
+func float64ToString(f float64) string {
+	return strconv.FormatFloat(f, 'f', 10, 64)
+}
+
 var strapp *stringAppend
 
 func init() {

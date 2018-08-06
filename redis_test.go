@@ -206,8 +206,12 @@ func (r *testRedis) Expect(expected ...interface{}) *testRedis {
 	case redis.KeyType:
 		r.as.Equal(string(e), r.str)
 	case redis.NullString:
+		fmt.Printf("result : %#v", r.results)
 		r.as.Equal(e.String, r.str)
 		r.as.Equal(e.Valid, !r.null)
+	case *redis.SortedSet:
+		r.as.Equal(e.Score, r.str)
+		r.as.Equal(e.Member, !r.null)
 	case nil:
 		r.as.Nil(r.duration)
 	default:
@@ -335,9 +339,15 @@ func interfaceSliceToReflectValue(typ reflect.Type, args []interface{}, i int) r
 			case "SetOption":
 				var ints []redis.SetOption
 				return reflect.ValueOf(&ints).Elem()
+			case "LimitOption":
+				var ints []redis.LimitOption
+				return reflect.ValueOf(&ints).Elem()
 			default:
 				panic(fmt.Sprintf("unsupport %v\n", typ.Elem().Name()))
 			}
+		case reflect.Interface:
+			var ints []interface{}
+			return reflect.ValueOf(&ints).Elem()
 		default:
 			if typ.Elem().ConvertibleTo(reflect.TypeOf(redis.SetOption{})) {
 				var str []redis.SetOption
@@ -349,6 +359,21 @@ func interfaceSliceToReflectValue(typ reflect.Type, args []interface{}, i int) r
 
 	switch args[i].(type) {
 	case int:
+		if i+1 < len(args) {
+			switch args[i+1].(type) {
+			case string:
+				var v = reflect.ValueOf(&[]interface{}{}).Elem()
+				for k, s := range args[i:] {
+					if k%2 == 0 {
+						v = reflect.Append(v, reflect.ValueOf(s.(int)))
+					} else {
+						v = reflect.Append(v, reflect.ValueOf(s.(string)))
+					}
+				}
+				return v
+			}
+		}
+
 		var v = reflect.ValueOf(&[]int{}).Elem()
 		for _, s := range args[i:] {
 			v = reflect.Append(v, reflect.ValueOf(s.(int)))
@@ -380,6 +405,10 @@ func interfaceSliceToReflectValue(typ reflect.Type, args []interface{}, i int) r
 func toInterfaceSlice(typ reflect.Type, value reflect.Value) []interface{} {
 	var slice []interface{}
 
+	if typ.Elem().Kind() == reflect.Ptr {
+		typ = typ.Elem()
+	}
+
 	switch typ.Elem().Kind() {
 	case reflect.String:
 		for _, v := range value.Convert(reflect.TypeOf([]string{})).Interface().([]string) {
@@ -399,11 +428,15 @@ func toInterfaceSlice(typ reflect.Type, value reflect.Value) []interface{} {
 			for _, v := range value.Convert(reflect.TypeOf([]redis.NullString{})).Interface().([]redis.NullString) {
 				slice = append(slice, v)
 			}
+		case "SortedSet":
+			for _, v := range value.Convert(reflect.TypeOf([]*redis.SortedSet{})).Interface().([]*redis.SortedSet) {
+				slice = append(slice, v)
+			}
 		default:
-			panic(fmt.Sprintf("expect slice , but got %#v", value))
+			panic(fmt.Sprintf("expect struct , but got %s: %#v", typ.Elem().Name(), value))
 		}
 	default:
-		panic(fmt.Sprintf("expect slice , but got %#v", value))
+		panic(fmt.Sprintf("expect slice , but got %s: %#v", typ.Elem().Kind(), value))
 	}
 
 	return slice

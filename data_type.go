@@ -59,3 +59,9 @@ const (
 	KeyTypeZSet   KeyType = "zset"   // 有序集
 	KeyTypeHash   KeyType = "hash"   // 哈希表
 )
+
+// SortedSet ...
+type SortedSet struct {
+	Member string
+	Score  int
+}

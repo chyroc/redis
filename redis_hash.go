@@ -107,7 +107,7 @@ func (r *Redis) HIncrBy(key, field string, increment int) (int, error) {
 //   返回值：
 //     执行加法操作之后 field 域的值。
 func (r *Redis) HIncrByFloat(key, field string, increment float64) (float64, error) {
-	return r.run("HINCRBYFLOAT", key, field, strconv.FormatFloat(increment, 'f', 10, 64)).fixFloat()
+	return r.run("HINCRBYFLOAT", key, field, float64ToString(increment)).fixFloat()
 }
 
 // HKeys key

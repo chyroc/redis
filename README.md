@@ -12,11 +12,24 @@ golang redis client / go语言实现的redis客户端
 * [x] string
 * [x] hash
 * [x] list
-* [ ] set
-* [ ] sorted set
+* [x] set
+* [x] sorted set
 * [ ] hyper log log
 * [ ] geo
 * [ ] pub / sub
 * [ ] transaction
 * [ ] script
 * [ ] server
+
+## test
+
+### run redis
+```
+docker run -p 6379:6379 -d redis # instance 1
+docker run -p 7777:6379 -d redis # instance 2
+```
+
+### run test
+```
+./test.sh
+```

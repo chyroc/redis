@@ -41,3 +41,9 @@ type ScanOption struct {
 	Match string
 	Count int
 }
+
+// LimitOption ...
+type LimitOption struct {
+	Offset int
+	Count  int
+}

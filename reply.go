@@ -68,6 +68,22 @@ func (p *Reply) fixBool() (bool, error) {
 	return false, p.err
 }
 
+func (p *Reply) fixNilInt() (int, error) {
+	if p.err != nil {
+		return 0, p.err
+	} else if p.null {
+		return 0, ErrKeyNotExist
+	}
+	return int(p.integer), nil
+}
+
+func (p *Reply) fixFloat64() (float64, error) {
+	if p.err != nil {
+		return 0, p.err
+	}
+	return strconv.ParseFloat(p.str, 10)
+}
+
 func (p *Reply) fixNullStringSlice() ([]NullString, error) {
 	if p.err != nil {
 		return nil, p.err
@@ -109,9 +125,48 @@ func (p *Reply) fixMap() (map[string]string, error) {
 		if p.replys[i].err != nil {
 			return nil, p.replys[i].err // TODO 真的有吗
 		}
+		if p.replys[i+1].err != nil {
+			return nil, p.replys[i+1].err // TODO 真的有吗
+		}
 		s[p.replys[i].str] = p.replys[i+1].str
 	}
 	return s, nil
+}
+
+func (p *Reply) fixSortedSetSlice() ([]*SortedSet, error) {
+	if p.err != nil {
+		return nil, p.err
+	}
+	var ss []*SortedSet
+	for _, v := range p.replys {
+		if v.err != nil {
+			return nil, v.err
+		}
+		ss = append(ss, &SortedSet{Member: v.str})
+	}
+	return ss, nil
+}
+
+func (p *Reply) fixSortedSetSliceWithScores() ([]*SortedSet, error) {
+	if p.err != nil {
+		return nil, p.err
+	}
+	var ss []*SortedSet
+	for i := 0; i < len(p.replys); i += 2 {
+		if p.replys[i].err != nil {
+			return nil, p.replys[i].err // TODO 真的有吗
+		}
+		if p.replys[i+1].err != nil {
+			return nil, p.replys[i+1].err // TODO 真的有吗
+		}
+		score, err := strconv.Atoi(p.replys[i+1].str)
+		if err != nil {
+			return nil, err
+		}
+		ss = append(ss, &SortedSet{Member: p.replys[i].str, Score: score})
+	}
+
+	return ss, nil
 }
 
 func (p *Reply) fixFloat() (float64, error) {

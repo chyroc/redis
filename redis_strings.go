@@ -265,7 +265,7 @@ func (r *Redis) IncrBy(key string, increment int) (int, error) {
 //   返回值：
 //     执行命令之后 key 的值。
 func (r *Redis) IncrByFloat(key string, increment float64) (float64, error) {
-	return r.run("INCRBYFLOAT", key, strconv.FormatFloat(increment, 'f', 10, 64)).fixFloat()
+	return r.run("INCRBYFLOAT", key, float64ToString(increment)).fixFloat()
 }
 
 // MGet ...
