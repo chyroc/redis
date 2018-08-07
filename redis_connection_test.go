@@ -8,7 +8,6 @@ import (
 	"time"
 )
 
-
 func TestConnection(t *testing.T) {
 	r := NewTest(t)
 

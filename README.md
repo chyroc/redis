@@ -14,10 +14,10 @@ golang redis client / go语言实现的redis客户端
 * [x] list
 * [x] set
 * [x] sorted set
-* [ ] hyper log log
-* [ ] geo
-* [ ] pub / sub
-* [ ] transaction
+* [x] hyper log log
+* [x] geo
+* [x] pub / sub
+* [x] transaction
 * [ ] script
 * [ ] server
 

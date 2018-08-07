@@ -1,8 +1,8 @@
 package redis_test
 
 import (
-	"testing"
 	"fmt"
+	"testing"
 )
 
 // fixme read lock and write lock

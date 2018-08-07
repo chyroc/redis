@@ -4,6 +4,7 @@ import (
 	"fmt"
 )
 
+// PSubscribe ...
 type PSubscribe struct {
 	Err     error
 	Pattern string
@@ -11,13 +12,14 @@ type PSubscribe struct {
 	Message string
 }
 
+// Subscribe ...
 type Subscribe struct {
 	Err     error
 	Channel string
 	Message string
 }
 
-// PSubScribe pattern [pattern ...]
+// PSubscribe pattern [pattern ...]
 //
 //   订阅一个或多个符合给定模式的频道。
 //
@@ -80,8 +82,8 @@ func (r *Redis) Publish(channel, message string) (int, error) {
 }
 
 // Pubsub <subcommand> [argument [argument ...]]
-func (r *Redis) Pubsub() *Pubsub {
-	return &Pubsub{r}
+func (r *Redis) Pubsub() *PubSub {
+	return &PubSub{r}
 }
 
 // PUnSubscribe [pattern [pattern ...]]

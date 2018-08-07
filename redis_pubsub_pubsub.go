@@ -1,6 +1,7 @@
 package redis
 
-type Pubsub struct {
+// PubSub ...
+type PubSub struct {
 	redis *Redis
 }
 
@@ -19,7 +20,7 @@ type Pubsub struct {
 //
 //   返回值
 //     一个由活跃频道组成的列表。
-func (r *Pubsub) Channels(patterns ...string) ([]string, error) {
+func (r *PubSub) Channels(patterns ...string) ([]string, error) {
 	return r.redis.run(buildSlice2("PUBSUB", "CHANNELS", patterns)...).fixStringSlice()
 }
 
@@ -33,7 +34,7 @@ func (r *Pubsub) Channels(patterns ...string) ([]string, error) {
 //     一个多条批量回复（Multi-bulk reply），回复中包含给定的频道，以及频道的订阅者数量。
 //     格式为：频道 channel-1 ， channel-1 的订阅者数量，频道 channel-2 ， channel-2 的订阅者数量，诸如此类。
 //     回复中频道的排列顺序和执行命令时给定频道的排列顺序一致。 不给定任何频道而直接调用这个命令也是可以的， 在这种情况下， 命令只返回一个空列表。
-func (r *Pubsub) NumSubscribe(channels ...string) (map[string]int, error) {
+func (r *PubSub) NumSubscribe(channels ...string) (map[string]int, error) {
 	p := r.redis.run(buildSlice2("PUBSUB", "NUMSUB", channels)...)
 	if p.errNotFromReply != nil {
 		return nil, p.errNotFromReply
@@ -56,6 +57,6 @@ func (r *Pubsub) NumSubscribe(channels ...string) (map[string]int, error) {
 //
 //   返回值
 //     一个整数回复（Integer reply）。
-func (r *Pubsub) NumPattern() (int, error) {
+func (r *PubSub) NumPattern() (int, error) {
 	return r.redis.run("PUBSUB", "NUMPAT").int()
 }

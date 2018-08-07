@@ -35,7 +35,7 @@ func (p *Reply) String() string {
 		for _, v := range p.replys {
 			s = append(s, v.String())
 		}
-		return fmt.Sprintf("(List: %s)",strings.Join(s,", "))
+		return fmt.Sprintf("(List: %s)", strings.Join(s, ", "))
 	}
 	return "<empty>"
 }
