@@ -2,7 +2,6 @@ package redis
 
 import (
 	"bufio"
-	"fmt"
 	"net"
 	"sync"
 	"time"
@@ -17,7 +16,7 @@ type Redis struct {
 
 // Dial conn redis
 func Dial(addr string) (*Redis, error) {
-	fmt.Printf("try to conn %s\n", addr)
+	Log.Printf("try to conn %s\n", addr)
 	conn, err := net.DialTimeout("tcp", addr, time.Second)
 	if err != nil {
 		return nil, err
