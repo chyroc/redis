@@ -41,33 +41,33 @@ func (r Redis) run(args ...string) *Reply {
 	defer r.Unlock()
 
 	if err := r.cmd(args...); err != nil {
-		Log.Printf("send %#v [error:%s]\n", args, err)
+		// TODO: Log.Printf("send %#v [error:%s]\n", args, err)
 		return errToReply(err)
 	}
 
 	reply, err := r.read()
 	if err != nil {
-		Log.Printf("send %#v [error:%s]\n", args, err)
+		// TODO: Log.Printf("send %#v [error:%s]\n", args, err)
 		return errToReply(err)
 	}
 
-	Log.Printf("send %#v | got %v\n", args, reply)
+	// TODO: Log.Printf("send %#v | got %v\n", args, reply)
 	return reply
 }
 
 // 需要加锁
 func (r Redis) runWithLock(args ...string) *Reply {
 	if err := r.cmd(args...); err != nil {
-		Log.Printf("send %#v [error:%s]\n", args, err)
+		// TODO: Log.Printf("send %#v [error:%s]\n", args, err)
 		return errToReply(err)
 	}
 
 	reply, err := r.read()
 	if err != nil {
-		Log.Printf("send %#v [error:%s]\n", args, err)
+		// TODO: Log.Printf("send %#v [error:%s]\n", args, err)
 		return errToReply(err)
 	}
 
-	Log.Printf("send %#v | got %v\n", args, reply)
+	// TODO: Log.Printf("send %#v | got %v\n", args, reply)
 	return reply
 }

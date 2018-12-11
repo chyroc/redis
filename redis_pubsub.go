@@ -46,7 +46,7 @@ func (r *Redis) PSubscribe(pattern string, patterns ...string) (chan PSubscribe,
 			if err != nil {
 				s <- PSubscribe{Err: err}
 			}
-			Log.Printf("psub: %s\n", reply)
+			// TODO: Log.Printf("psub: %s\n", reply)
 
 			if len(reply.replys) < 1 {
 				s <- PSubscribe{Err: fmt.Errorf("expect at least subscribe response")}
@@ -126,7 +126,7 @@ func (r *Redis) Subscribe(channel string, channels ...string) (chan Subscribe, e
 			if err != nil {
 				s <- Subscribe{Err: err}
 			}
-			Log.Printf("sub: %s\n", reply)
+			// TODO: Log.Printf("sub: %s\n", reply)
 
 			if len(reply.replys) < 1 {
 				s <- Subscribe{Err: fmt.Errorf("expect at least subscribe response")}
