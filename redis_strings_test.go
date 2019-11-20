@@ -3,7 +3,7 @@ package redis_test
 import (
 	"testing"
 
-	"github.com/Chyroc/redis"
+	"github.com/chyroc/redis"
 	"time"
 )
 

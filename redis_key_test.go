@@ -1,7 +1,7 @@
 package redis_test
 
 import (
-	"github.com/Chyroc/redis"
+	"github.com/chyroc/redis"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"

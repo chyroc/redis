@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/Chyroc/redis"
+	"github.com/chyroc/redis"
 )
 
 func diffLessThan(t *testing.T, a, b, diff float64) {

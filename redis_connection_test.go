@@ -1,7 +1,7 @@
 package redis_test
 
 import (
-	"github.com/Chyroc/redis"
+	"github.com/chyroc/redis"
 	"os"
 	"sync"
 	"testing"
